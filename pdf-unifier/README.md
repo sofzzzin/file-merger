@@ -69,7 +69,7 @@ pdf-unifier/
 ## Requisitos
 
 - Un navegador moderno con soporte para JavaScript.
-- Conexión a internet para cargar las bibliotecas de PDF.js y PDF-lib desde CDN.
+
 
 ## Cómo ejecutar localmente
 
@@ -98,10 +98,11 @@ http://localhost:4173/
 
 ## Notas
 
-- El procesamiento se realiza completamente en el cliente.
-- No se suben archivos a ningún servidor.
-- La exportación usa la librería PDF-lib para generar el PDF final.
-
+- Todo el procesamiento se realiza localmente en el navegador.
+- Los archivos nunca se envían a un servidor.
+- No se requiere conexión a internet para utilizar la aplicación una vez abiertos los archivos del proyecto.
+- La exportación del documento se realiza mediante PDF-lib.
+  
 ## Créditos
 
 - PDF.js
