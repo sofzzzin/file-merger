@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Unificador</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/upload.css">
+  <link rel="stylesheet" href="css/workspace.css">
+  <link rel="stylesheet" href="css/library.css">
+  <link rel="stylesheet" href="css/canvas.css">
+  <link rel="stylesheet" href="css/lightbox.css">
+  <link rel="stylesheet" href="css/modals.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+  <div id="app">
+    <div id="dropScreen">
+      <div class="eyebrow">Unificador de documentos</div>
+      <h1>Une PDFs e imágenes<br>en un solo archivo</h1>
+      <p class="sub">Sube tus PDFs, PNGs o JPGs a la biblioteca y luego arrástralos al lienzo en el orden que quieras. Los PDF se despliegan en todas sus páginas al soltarlos.</p>
+      <div id="dropZone">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        <div class="ddtitle">Suelta tus archivos aquí, o haz clic para elegir</div>
+        <div class="ddformats"><span>PDF</span><span>PNG</span><span>JPG</span></div>
+      </div>
+      <input type="file" id="fileInput" multiple accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg">
+      <div class="hint">Todo se procesa en tu navegador. Nada se sube a ningún servidor.</div>
+    </div>
+
+    <div id="workspace">
+      <div id="topbar">
+        <div class="brand"><div class="dot"></div><span>Unificador</span></div>
+        <div class="meta" id="pageCount">
+          <input type="number" id="pageCountInput" min="1" value="1" disabled>
+          <span class="pageCountSep">/</span>
+          <span id="pageCountTotal">0</span>
+          <span class="pageCountLabel">páginas</span>
+        </div>
+        <div class="zoomCtrl">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="range" id="zoomSlider" min="50" max="160" step="10" value="100">
+          <span class="zoomPct" id="zoomPct">100%</span>
+        </div>
+        <div class="actions">
+          <button class="btn" id="selectAllBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            Seleccionar todo
+          </button>
+          <button class="btn" id="addMoreBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Agregar
+          </button>
+          <div class="trashWrap">
+            <button class="btn" id="trashBtn" title="Papelera de reciclaje">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            </button>
+            <div class="trashBadge" id="trashBadge" style="display:none;">0</div>
+          </div>
+          <button class="btn primary" id="exportBtn" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+            Exportar PDF
+          </button>
+        </div>
+      </div>
+      <input type="file" id="addMoreInput" multiple accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg">
+
+      <div id="workspaceBody">
+        <div id="libraryPanel">
+          <div class="eyebrow">Biblioteca</div>
+          <div id="libraryList"></div>
+          <div id="libraryEmpty">Aquí aparecerán tus archivos. Arrástralos al lienzo para armar tu documento, o arrastra páginas del lienzo aquí para guardarlas.</div>
+        </div>
+        <div id="canvasArea">
+          <div id="pageList"></div>
+          <div id="emptyState">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M13 3v6h6"/></svg>
+            <div>El lienzo está vacío.<br>Arrastra un archivo de la biblioteca para empezar.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button id="floatingAdd" title="Agregar archivos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+
+    <div id="selectionBar">
+      <span class="selCount" id="selCount">0 seleccionadas</span>
+      <button class="btn" id="sendToLibraryBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V6a2 2 0 0 0-2-2H8L4 8"/><path d="M4 8v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"/><path d="M9 13h6M12 10v6"/></svg>
+        Enviar a biblioteca
+      </button>
+      <button class="btn danger" id="deleteSelectedBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        Eliminar
+      </button>
+      <button class="btn" id="cancelSelectionBtn">Cancelar</button>
+    </div>
+
+    <div id="toast"><div class="dot"></div><span id="toastMsg"></span></div>
+
+    <div id="lightbox">
+      <div id="lightboxStage">
+        <img id="lightboxImg" src="" alt="">
+      </div>
+      <button id="lbPrev" title="Anterior">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <button id="lbNext" title="Siguiente">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+      <button id="lightboxClose">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+      <div id="lbToolbar">
+        <button class="lbBtn" id="lbZoomOut" title="Alejar">−</button>
+        <button class="lbBtn" id="lbZoomIn" title="Acercar">+</button>
+        <button class="lbBtn" id="lbFit" title="Ajustar a pantalla">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/></svg>
+        </button>
+        <span id="lbZoomLevel">100%</span>
+        <div class="lbDivider"></div>
+        <div class="lbPageWrap">
+          <input type="number" id="lbPageInput" min="1" value="1">
+          <span>de</span>
+          <span id="lbPageTotal">1</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="modalOverlay" id="confirmModal">
+      <div class="modalCard">
+        <h3>¿Seguro que quieres eliminar?</h3>
+        <div class="modalMsg" id="confirmMsg"></div>
+        <div class="modalActions">
+          <button class="btn" id="confirmCancel">Cancelar</button>
+          <button class="btn danger" id="confirmOk">Eliminar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modalOverlay" id="trashPanel">
+      <div class="modalCard">
+        <h3>Papelera de reciclaje</h3>
+        <div id="trashList"></div>
+        <div id="trashEmpty" style="display:none;">La papelera está vacía.</div>
+        <div class="modalActions">
+          <button class="btn" id="clearTrashBtn">Vaciar papelera</button>
+          <button class="btn primary" id="closeTrashBtn">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/state.js"></script>
+  <script src="js/utils/constants.js"></script>
+  <script src="js/utils/helpers.js"></script>
+  <script src="js/utils/ids.js"></script>
+  <script src="js/ui/toast.js"></script>
+  <script src="js/ui/modal.js"></script>
+  <script src="js/ui/zoom.js"></script>
+  <script src="js/ui/lightbox.js"></script>
+  <script src="js/ui/selectionBar.js"></script>
+  <script src="js/upload/uploader.js"></script>
+  <script src="js/upload/pdfProcessor.js"></script>
+  <script src="js/upload/imageProcessor.js"></script>
+  <script src="js/library/library.js"></script>
+  <script src="js/library/rename.js"></script>
+  <script src="js/library/dragLibrary.js"></script>
+  <script src="js/library/trashLibrary.js"></script>
+  <script src="js/canvas/renderPages.js"></script>
+  <script src="js/canvas/selection.js"></script>
+  <script src="js/canvas/dragCanvas.js"></script>
+  <script src="js/canvas/reorder.js"></script>
+  <script src="js/canvas/pageNavigation.js"></script>
+  <script src="js/canvas/canvas.js"></script>
+  <script src="js/trash/trash.js"></script>
+  <script src="js/export/exportPDF.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

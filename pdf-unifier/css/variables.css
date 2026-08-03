@@ -1,0 +1,15 @@
+:root{
+  --bg:#eef3fb;
+  --panel:#ffffff;
+  --panel-2:#f6f9ff;
+  --border:#e1e8f7;
+  --blue:#3d7fff;
+  --blue-dark:#2c67e0;
+  --blue-soft:#eaf1ff;
+  --ink:#1c2a45;
+  --muted:#8894ab;
+  --danger:#ef4b4b;
+  --danger-soft:#fdeceb;
+  --mono:'JetBrains Mono', monospace;
+  --sans:'Inter', sans-serif;
+}

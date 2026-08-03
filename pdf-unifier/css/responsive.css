@@ -1,0 +1,12 @@
+@media (max-width: 980px){
+  #workspaceBody{flex-direction:column;}
+  #libraryPanel{width:100%;flex-basis:auto;max-height:34vh;border-right:none;border-bottom:1px solid var(--border);}
+  #canvasArea{padding-top:20px;}
+}
+@media (max-width: 760px){
+  #topbar{padding:12px 14px;}
+  #topbar .actions{width:100%;flex-wrap:wrap;justify-content:flex-start;}
+  #selectionBar{width:calc(100% - 20px);border-radius:16px;flex-wrap:wrap;justify-content:center;}
+  #selectionBar .selCount{width:100%;text-align:center;}
+  #dropZone{padding:32px 20px;}
+}
