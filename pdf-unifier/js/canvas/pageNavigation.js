@@ -47,14 +47,3 @@ pageCountInput.addEventListener('keydown', e=>{
   }
 });
 canvasArea.addEventListener('scroll', updateCurrentPageIndicator, { passive:true });
-
-function toggleSelectAll(){
-  if (!pages.length) return;
-  if (selectedIds.size === pages.length){
-    selectedIds.clear();
-  } else {
-    selectedIds = new Set(pages.map(p=>p.id));
-  }
-  updateSelectionUI();
-}
-selectAllBtn.addEventListener('click', toggleSelectAll);
