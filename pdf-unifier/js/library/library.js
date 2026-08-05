@@ -96,9 +96,10 @@ function renderLibrary(){
     el.appendChild(del);
 
     if (!isLoading && !isError){
-      el.addEventListener('dragstart', e=>{
+el.addEventListener('dragstart', e=>{
         e.dataTransfer.effectAllowed = 'copy';
         e.dataTransfer.setData('text/plain', libId);
+        setTransparentDragImage(e);
         currentDrag = { origin:'library', libId };
         requestAnimationFrame(()=>el.classList.add('dragging'));
       });

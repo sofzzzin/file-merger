@@ -102,7 +102,20 @@
       <button class="btn" id="cancelSelectionBtn">Cancelar</button>
     </div>
 
-    <div id="toast"><div class="dot"></div><span id="toastMsg"></span></div>
+<div id="toast"><div class="dot"></div><span id="toastMsg"></span></div>
+
+    <div id="dragStackOverlay" aria-hidden="true">
+      <div class="stackDeck">
+        <div class="stackCard sc1"></div>
+        <div class="stackCard sc2"></div>
+        <div class="stackCard sc3"></div>
+        <div class="stackCard scFront"></div>
+      </div>
+      <div class="stackCount">
+        <span class="stackCountNum">0</span>
+        <span class="stackCountLabel">elementos</span>
+      </div>
+    </div>
 
     <div id="lightbox">
       <div id="lightboxStage">

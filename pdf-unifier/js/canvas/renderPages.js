@@ -144,17 +144,32 @@ function makeCard(p, idx){
   pageNum.textContent = idx + 1;
   card.appendChild(pageNum);
 
-  card.addEventListener('dragstart', e=>{
+card.addEventListener('dragstart', e=>{
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', p.id);
-    if (selectedIds.has(p.id) && selectedIds.size > 1){
-      currentDrag = { origin:'canvas-multi', pageIds: [...selectedIds] };
+    setTransparentDragImage(e);
+    
+    if (selectedIds.has(p.id) && selectedIds.size > 1) {
+      const selectedIdsArray = Array.from(selectedIds);
+      currentDrag = { 
+        origin: 'canvas-multi', 
+        pageIds: selectedIdsArray 
+      };
+      console.log('Moviendo múltiples páginas:', selectedIdsArray.length);
     } else {
-      if (selectedIds.size && !selectedIds.has(p.id)){ selectedIds.clear(); updateSelectionUI(); }
-      currentDrag = { origin:'canvas', pageId: p.id };
+      if (selectedIds.size && !selectedIds.has(p.id)) {
+        selectedIds.clear(); 
+        updateSelectionUI(); 
+      }
+      currentDrag = { 
+        origin: 'canvas', 
+        pageId: p.id 
+      };
+      console.log('Moviendo una página:', p.id);
     }
-    requestAnimationFrame(()=>card.classList.add('dragging'));
-  });
+  
+  requestAnimationFrame(() => card.classList.add('dragging'));
+});
   card.addEventListener('dragend', ()=>{
     card.classList.remove('dragging');
     currentDrag = null;

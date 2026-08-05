@@ -27,6 +27,7 @@ canvasArea.addEventListener('dragleave', e=>{
   if (e.target === canvasArea) canvasArea.classList.remove('dropready');
 });
 
+// En js/canvas/dragCanvas.js - dentro del evento drop de canvasArea
 canvasArea.addEventListener('drop', e=>{
   e.preventDefault();
   canvasArea.classList.remove('dropready');
@@ -90,21 +91,48 @@ canvasArea.addEventListener('drop', e=>{
     }
     pages.splice(targetIndex, 0, ...newItems);
   } else if (currentDrag.origin === 'canvas'){
-    const fromIndex = pages.findIndex(p=>p.id === currentDrag.pageId);
+   const fromIndex = pages.findIndex(p=>p.id === currentDrag.pageId);
     if (fromIndex === -1) return;
     const [moved] = pages.splice(fromIndex, 1);
     let insertAt = targetIndex;
     if (fromIndex < targetIndex) insertAt -= 1;
     pages.splice(insertAt, 0, moved);
   } else if (currentDrag.origin === 'canvas-multi'){
-    const idSet = new Set(currentDrag.pageIds);
-    let removedBefore = 0;
-    pages.forEach((p, i)=>{ if (idSet.has(p.id) && i < targetIndex) removedBefore++; });
-    const movedItems = pages.filter(p=>idSet.has(p.id));
-    const remaining = pages.filter(p=>!idSet.has(p.id));
-    const insertAt = targetIndex - removedBefore;
-    remaining.splice(insertAt, 0, ...movedItems);
-    pages = remaining;
+    console.log('Procesando drop múltiple:', currentDrag.pageIds);
+    const pageIds = Array.isArray(currentDrag.pageIds) ? currentDrag.pageIds : [currentDrag.pageIds];
+    const idSet = new Set(pageIds);
+    const existingPages = pages.filter(p => idSet.has(p.id));
+    if (existingPages.length !== pageIds.length) {
+      console.warn('Algunas páginas no existen:', pageIds.filter(id => !pages.some(p => p.id === id)));
+      const validIds = existingPages.map(p => p.id);
+      const validIdSet = new Set(validIds);
+      
+      if (validIds.length === 0) return;
+      
+      // Recalcular targetIndex
+      let removedBefore = 0;
+      pages.forEach((p, i) => { 
+        if (validIdSet.has(p.id) && i < targetIndex) removedBefore++; 
+      });
+      
+      const movedItems = pages.filter(p => validIdSet.has(p.id));
+      const remaining = pages.filter(p => !validIdSet.has(p.id));
+      const insertAt = targetIndex - removedBefore;
+      
+      remaining.splice(insertAt, 0, ...movedItems);
+      pages = remaining;
+    } else {
+      // Todas las páginas existen
+      let removedBefore = 0;
+      pages.forEach((p, i) => { 
+        if (idSet.has(p.id) && i < targetIndex) removedBefore++; 
+      });
+      const movedItems = pages.filter(p => idSet.has(p.id));
+      const remaining = pages.filter(p => !idSet.has(p.id));
+      const insertAt = targetIndex - removedBefore;
+      remaining.splice(insertAt, 0, ...movedItems);
+      pages = remaining;
+    }
     selectedIds.clear();
   }
 
