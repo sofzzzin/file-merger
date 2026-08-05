@@ -11,7 +11,8 @@
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/upload.css">
   <link rel="stylesheet" href="css/workspace.css">
-  <link rel="stylesheet" href="css/library.css">
+<link rel="stylesheet" href="css/library.css">
+  <link rel="stylesheet" href="css/sections.css">
   <link rel="stylesheet" href="css/canvas.css">
   <link rel="stylesheet" href="css/lightbox.css">
   <link rel="stylesheet" href="css/modals.css">
@@ -73,9 +74,13 @@
 <div id="libraryPanel">
           <div class="libHeader">
             <div class="eyebrow">Biblioteca</div>
-            <button class="libSelectAllBtn" id="libSelectAllBtn" title="Seleccionar todo">
+<button class="libSelectAllBtn" id="libSelectAllBtn" title="Seleccionar todo">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
               <span>Seleccionar todo</span>
+            </button>
+            <button class="libSelectAllBtn" id="createLibrarySectionBtn" title="Crear sección con los elementos seleccionados">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 12h6M12 9v6"/></svg>
+              <span>Crear sección</span>
             </button>
           </div>
 <div id="libraryList"></div>
@@ -102,8 +107,12 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
     </button>
 
-    <div id="selectionBar">
+<div id="selectionBar">
       <span class="selCount" id="selCount">0 seleccionadas</span>
+      <button class="btn" id="createCanvasSectionBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 12h6M12 9v6"/></svg>
+        Crear sección
+      </button>
       <button class="btn" id="sendToLibraryBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V6a2 2 0 0 0-2-2H8L4 8"/><path d="M4 8v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"/><path d="M9 13h6M12 10v6"/></svg>
         Enviar a biblioteca
@@ -198,7 +207,8 @@
   <script src="js/library/library.js"></script>
   <script src="js/library/rename.js"></script>
   <script src="js/library/dragLibrary.js"></script>
-  <script src="js/library/trashLibrary.js"></script>
+<script src="js/library/trashLibrary.js"></script>
+  <script src="js/sections/sections.js"></script>
   <script src="js/canvas/renderPages.js"></script>
   <script src="js/canvas/selection.js"></script>
   <script src="js/canvas/dragCanvas.js"></script>

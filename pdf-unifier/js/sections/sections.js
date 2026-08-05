@@ -1,0 +1,523 @@
+// ─────────────────────────────────────────────────────────────
+//  MÓDULO DE SECCIONES
+//  Gestiona secciones tanto en el lienzo (agrupan páginas)
+//  como en la biblioteca (agrupan ítems de biblioteca).
+// ─────────────────────────────────────────────────────────────
+
+// ── Helpers ──────────────────────────────────────────────────
+
+function getNextCanvasSectionName(){
+  let n = sections.length + 1;
+  let base = 'Sección ' + n;
+  while (sections.some(s => s.name === base)){ n++; base = 'Sección ' + n; }
+  return base;
+}
+
+function getNextLibSectionName(){
+  let n = librarySections.length + 1;
+  let base = 'Sección ' + n;
+  while (librarySections.some(s => s.name === base)){ n++; base = 'Sección ' + n; }
+  return base;
+}
+
+function getSectionOfPage(pageId){
+  return sections.find(s => s.pageIds.includes(pageId)) || null;
+}
+
+function getLibSectionOfItem(libId){
+  return librarySections.find(s => s.libIds.includes(libId)) || null;
+}
+
+// ── Deshacer (Ctrl+Z) con ventana de 20 segundos ────────────
+
+function armUndo(scope, sectionId){
+  undoState = { scope, sectionId, created: Date.now() };
+  clearTimeout(undoTimeout);
+  undoTimeout = setTimeout(()=>{
+    undoState = null;
+  }, 20000);
+}
+
+function clearUndo(){
+  undoState = null;
+  clearTimeout(undoTimeout);
+}
+
+function undoLastSectionCreation(){
+  if (!undoState) return false;
+  const { scope, sectionId } = undoState;
+  clearUndo();
+
+  if (scope === 'canvas'){
+    const sec = sections.find(s => s.id === sectionId);
+    if (!sec) return false;
+    // Desagrupar: solo se elimina la sección, las páginas permanecen sueltas
+    sections = sections.filter(s => s.id !== sectionId);
+    renderPageList();
+    showToast('Se ha deshecho la creación de la sección en el lienzo.');
+    return true;
+  }
+
+  if (scope === 'library'){
+    const sec = librarySections.find(s => s.id === sectionId);
+    if (!sec) return false;
+    // Desagrupar: los ítems vuelven a quedar sueltos en la biblioteca
+    librarySections = librarySections.filter(s => s.id !== sectionId);
+    renderLibrary();
+    showToast('Se ha deshecho la creación de la sección en la biblioteca.');
+    return true;
+  }
+
+  return false;
+}
+
+document.addEventListener('keydown', e=>{
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z'){
+    e.preventDefault();
+    undoLastSectionCreation();
+  }
+});
+
+// ── Crear sección en el lienzo ───────────────────────────────
+
+function createCanvasSection(pageIds){
+  const ids = Array.isArray(pageIds) ? pageIds.filter(id => pages.some(p => p.id === id)) : [];
+  if (!ids.length) return;
+
+  const sec = {
+    id: 'sec' + (sectionCounter++),
+    name: getNextCanvasSectionName(),
+    pageIds: ids
+  };
+  sections.push(sec);
+  armUndo('canvas', sec.id);
+  renderPageList();
+  showToast('Sección creada en el lienzo. Puedes deshacerla con Ctrl+Z durante 20 segundos.');
+}
+
+// Opción contextual: agrupar las páginas seleccionadas del lienzo
+document.addEventListener('click', e=>{
+  const btn = e.target.closest('#createCanvasSectionBtn');
+  if (!btn) return;
+  if (!selectedIds.size){
+    showToast('Selecciona varias páginas del lienzo para crear una sección.');
+    return;
+  }
+  createCanvasSection(Array.from(selectedIds));
+  selectedIds.clear();
+  updateSelectionUI();
+});
+
+// ── Crear sección en la biblioteca ─────────────────────────────
+
+function createLibrarySection(libIds){
+  const ids = Array.isArray(libIds)
+    ? libIds.filter(id => libraryItemsMap[id] && libraryItemsMap[id].status === 'ready')
+    : [];
+  if (!ids.length) return;
+
+  // Quitar los ítems de secciones existentes para no duplicar
+  librarySections.forEach(s => {
+    s.libIds = s.libIds.filter(id => !ids.includes(id));
+  });
+
+  const sec = {
+    id: 'libsec' + (libSectionCounter++),
+    name: getNextLibSectionName(),
+    libIds: ids
+  };
+  librarySections.push(sec);
+  armUndo('library', sec.id);
+  renderLibrary();
+  showToast('Sección creada en la biblioteca. Puedes deshacerla con Ctrl+Z durante 20 segundos.');
+}
+
+document.addEventListener('click', e=>{
+  const btn = e.target.closest('#createLibrarySectionBtn');
+  if (!btn) return;
+  if (!selectedLibIds.size){
+    showToast('Selecciona varios elementos de la biblioteca para crear una sección.');
+    return;
+  }
+  createLibrarySection(Array.from(selectedLibIds));
+  selectedLibIds.clear();
+  updateLibSelectionUI();
+});
+
+// ── Renombrar sección (doble clic en la etiqueta) ─────────────
+
+function startSectionRename(scope, sectionId, nameEl){
+  const name = scope === 'canvas'
+    ? sections.find(s => s.id === sectionId)?.name
+    : librarySections.find(s => s.id === sectionId)?.name;
+  if (name === undefined) return;
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'sectionNameInput';
+  input.value = name;
+  nameEl.replaceWith(input);
+  input.focus();
+  input.select();
+
+  function commit(){
+    const v = input.value.trim();
+    if (scope === 'canvas'){
+      const sec = sections.find(s => s.id === sectionId);
+      if (sec) sec.name = v || sec.name;
+      renderPageList();
+    } else {
+      const sec = librarySections.find(s => s.id === sectionId);
+      if (sec) sec.name = v || sec.name;
+      renderLibrary();
+    }
+  }
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', e=>{
+    if (e.key === 'Enter') input.blur();
+    if (e.key === 'Escape'){ input.value = name; input.blur(); }
+  });
+}
+
+// ── Eliminar sección ──────────────────────────────────────────
+
+async function deleteCanvasSection(sectionId){
+  const sec = sections.find(s => s.id === sectionId);
+  if (!sec) return false;
+  const ok = await confirmDialog('¿Mover la sección "' + sec.name + '" (' + sec.pageIds.length + ' página(s)) a la papelera?');
+  if (!ok) return false;
+  sections = sections.filter(s => s.id !== sectionId);
+  renderPageList();
+  showToast('Sección enviada a la papelera.');
+  return true;
+}
+
+async function deleteLibrarySection(sectionId){
+  const sec = librarySections.find(s => s.id === sectionId);
+  if (!sec) return false;
+  const ok = await confirmDialog('¿Mover la sección "' + sec.name + '" (' + sec.libIds.length + ' elemento(s)) a la papelera?');
+  if (!ok) return false;
+  librarySections = librarySections.filter(s => s.id !== sectionId);
+  renderLibrary();
+  showToast('Sección enviada a la papelera.');
+  return true;
+}
+
+// ── Exportar sección como PDF independiente ──────────────────
+
+document.addEventListener('click', async e=>{
+  const btn = e.target.closest('.sectionExportBtn');
+  if (!btn) return;
+  const sectionId = btn.dataset.sectionId;
+  const sec = sections.find(s => s.id === sectionId);
+  if (!sec || !sec.pageIds.length) return;
+
+  const originalLabel = exportBtn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = 'Generando...';
+  try{
+    const { PDFDocument } = PDFLib;
+    const finalDoc = await PDFDocument.create();
+    const pdfLibCache = {};
+    const secPages = pages.filter(p => sec.pageIds.includes(p.id));
+
+    for (const p of secPages){
+      if (p.type === 'pdf'){
+        let srcDoc = pdfLibCache[p.sourceId];
+        if (!srcDoc){
+          srcDoc = await PDFDocument.load(sources[p.sourceId].bytes.slice(0));
+          pdfLibCache[p.sourceId] = srcDoc;
+        }
+        const [copied] = await finalDoc.copyPages(srcDoc, [p.pageIndex]);
+        finalDoc.addPage(copied);
+      } else {
+        const src = sources[p.sourceId];
+        const base64 = src.dataUrl.split(',')[1];
+        const bytes = Uint8Array.from(atob(base64), c=>c.charCodeAt(0));
+        let embedded;
+        if (src.mime === 'image/png') embedded = await finalDoc.embedPng(bytes);
+        else embedded = await finalDoc.embedJpg(bytes);
+
+        const PX_TO_PT = 72/96;
+        let w = p.w * PX_TO_PT;
+        let h = p.h * PX_TO_PT;
+        const maxDim = 1000;
+        if (Math.max(w,h) > maxDim){
+          const s = maxDim / Math.max(w,h);
+          w *= s; h *= s;
+        }
+        const page = finalDoc.addPage([w, h]);
+        page.drawImage(embedded, { x:0, y:0, width:w, height:h });
+      }
+    }
+
+    const outBytes = await finalDoc.save();
+    const blob = new Blob([outBytes], { type:'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (sec.name.replace(/\s+/g,'_') || 'seccion') + '.pdf';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    showToast('Sección exportada como PDF.');
+  }catch(err){
+    console.error(err);
+    showToast('Error al exportar la sección: ' + err.message);
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = 'PDF';
+  }
+});
+
+// ── Divisor de sección en el lienzo ──────────────────────────
+
+function makeSectionDivider(sec, pageCount){
+  const div = document.createElement('div');
+  div.className = 'sectionDivider';
+  div.draggable = true;
+  div.dataset.sectionId = sec.id;
+
+  const grip = document.createElement('div');
+  grip.className = 'secGrip';
+  grip.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h6M9 12h6M9 18h6"/></svg>';
+
+  const label = document.createElement('div');
+  label.className = 'secLabel';
+  label.textContent = sec.name;
+  label.title = 'Doble clic para renombrar';
+  label.addEventListener('dblclick', e=>{
+    e.stopPropagation();
+    startSectionRename('canvas', sec.id, label);
+  });
+
+  const count = document.createElement('div');
+  count.className = 'secCount';
+  count.textContent = pageCount + (pageCount === 1 ? ' página' : ' páginas');
+
+  const actions = document.createElement('div');
+  actions.className = 'secActions';
+
+  const exportBtnSec = document.createElement('button');
+  exportBtnSec.className = 'secActionBtn sectionExportBtn';
+  exportBtnSec.dataset.sectionId = sec.id;
+  exportBtnSec.title = 'Descargar sección como PDF';
+  exportBtnSec.textContent = 'PDF';
+  exportBtnSec.innerHTML = 'PDF';
+  actions.appendChild(exportBtnSec);
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'secActionBtn secDelBtn';
+  delBtn.title = 'Eliminar sección';
+  delBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+  delBtn.addEventListener('click', e=>{
+    e.stopPropagation();
+    deleteCanvasSection(sec.id);
+  });
+  actions.appendChild(delBtn);
+
+  div.appendChild(grip);
+  div.appendChild(label);
+  div.appendChild(count);
+  div.appendChild(actions);
+
+  div.addEventListener('dragstart', e=>{
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', sec.id);
+    setTransparentDragImage(e);
+    currentDrag = { origin: 'canvas-section', sectionId: sec.id };
+    requestAnimationFrame(()=>div.classList.add('dragging'));
+  });
+  div.addEventListener('dragend', ()=>{
+    div.classList.remove('dragging');
+    currentDrag = null;
+    closeAllGaps();
+  });
+
+  return div;
+}
+
+// ── Render de secciones de biblioteca ────────────────────────
+
+function renderLibrarySectionBlock(sec){
+  const wrap = document.createElement('div');
+  wrap.className = 'libSection';
+
+  const header = document.createElement('div');
+  header.className = 'libSectionHeader';
+
+  const grip = document.createElement('div');
+  grip.className = 'secGrip';
+  grip.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h6M9 12h6M9 18h6"/></svg>';
+
+  const label = document.createElement('div');
+  label.className = 'secLabel';
+  label.textContent = sec.name;
+  label.title = 'Doble clic para renombrar';
+  label.addEventListener('dblclick', e=>{
+    e.stopPropagation();
+    startSectionRename('library', sec.id, label);
+  });
+
+  const count = document.createElement('div');
+  count.className = 'secCount';
+  count.textContent = sec.libIds.length + (sec.libIds.length === 1 ? ' elemento' : ' elementos');
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'secActionBtn secDelBtn';
+  delBtn.title = 'Eliminar sección';
+  delBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+  delBtn.addEventListener('click', e=>{
+    e.stopPropagation();
+    deleteLibrarySection(sec.id);
+  });
+
+  header.appendChild(grip);
+  header.appendChild(label);
+  header.appendChild(count);
+  header.appendChild(delBtn);
+  wrap.appendChild(header);
+
+  // Contenedor de los ítems de la sección
+  sec.libIds.forEach(libId=>{
+    const item = libraryItemsMap[libId];
+    if (!item) return;
+    const el = makeLibraryItemElement(libId, item);
+    if (el) wrap.appendChild(el);
+  });
+
+  return wrap;
+}
+
+// Crea el elemento DOM de un ítem de biblioteca (reutilizado por renderLibrary)
+function makeLibraryItemElement(libId, item){
+  const isLoading = item.status === 'loading';
+  const isError = item.status === 'error';
+
+  const el = document.createElement('div');
+  el.className = 'libItem' + (isLoading ? ' loading' : '');
+  el.draggable = !isLoading && !isError;
+  el.dataset.libId = libId;
+
+  const thumbWrap = document.createElement('div');
+  thumbWrap.className = 'libThumbWrap';
+  if (isLoading){
+    thumbWrap.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M13 3v6h6"/></svg>';
+  } else {
+    if (item.kind === 'file' && item.type === 'pdf' && item.pageCount > 1){
+      const s1 = document.createElement('div'); s1.className='stack s1';
+      const s2 = document.createElement('div'); s2.className='stack s2';
+      thumbWrap.appendChild(s1); thumbWrap.appendChild(s2);
+    }
+    const img = document.createElement('img');
+    img.src = item.thumb;
+    img.addEventListener('click', e=>{ e.stopPropagation(); openLightbox([item.thumb], 0); });
+    thumbWrap.appendChild(img);
+  }
+
+  if (!isLoading && !isError){
+    const selectDot = document.createElement('div');
+    selectDot.className = 'libSelectDot';
+    selectDot.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+    selectDot.addEventListener('mousedown', e=>e.stopPropagation());
+    selectDot.addEventListener('click', e=>{ e.stopPropagation(); toggleLibSelect(libId); });
+    el.appendChild(selectDot);
+  }
+
+  const info = document.createElement('div');
+  info.className = 'libInfo';
+
+  const name = document.createElement('div');
+  name.className = 'name';
+  name.textContent = item.name;
+  name.title = 'Doble clic para renombrar';
+  if (!isLoading && !isError){
+    name.addEventListener('dblclick', e=>{
+      e.stopPropagation();
+      startRename(item, name);
+    });
+  }
+  info.appendChild(name);
+
+  if (isLoading){
+    const row = document.createElement('div');
+    row.className = 'progressRow';
+    const track = document.createElement('div'); track.className = 'progressTrack';
+    const fill = document.createElement('div'); fill.className = 'progressFill';
+    fill.style.width = (item.progress || 0) + '%';
+    track.appendChild(fill);
+    const pct = document.createElement('div'); pct.className = 'progressPct';
+    pct.textContent = Math.round(item.progress || 0) + '%';
+    row.appendChild(track); row.appendChild(pct);
+    info.appendChild(row);
+  } else if (isError){
+    const meta = document.createElement('div');
+    meta.className = 'meta'; meta.style.color = 'var(--danger)';
+    meta.textContent = 'Error al procesar';
+    info.appendChild(meta);
+  } else {
+    const row = document.createElement('div');
+    row.className = 'metaRow';
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    if (item.kind === 'file'){
+      meta.textContent = item.type === 'pdf'
+        ? (item.pageCount + (item.pageCount===1?' página':' páginas'))
+        : 'Imagen';
+    } else {
+      meta.textContent = item.type === 'pdf' ? 'Página suelta' : 'Imagen';
+    }
+    row.appendChild(meta);
+    if (item.kind === 'page'){
+      const tag = document.createElement('span');
+      tag.className = 'kindTag';
+      tag.textContent = 'del lienzo';
+      row.appendChild(tag);
+    }
+    info.appendChild(row);
+  }
+
+  const del = document.createElement('button');
+  del.className = 'libDel';
+  del.title = 'Eliminar';
+  del.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+  del.addEventListener('click', e=>{
+    e.stopPropagation();
+    trashLibraryItem(libId);
+  });
+
+  el.appendChild(thumbWrap);
+  el.appendChild(info);
+  el.appendChild(del);
+
+  if (!isLoading && !isError){
+    el.addEventListener('click', e=>{
+      if (e.target.closest('.libSelectDot') || e.target.closest('.libDel')) return;
+      if (selectedLibIds.size > 0) toggleLibSelect(libId);
+    });
+    el.addEventListener('dragstart', e=>{
+      e.dataTransfer.effectAllowed = 'copy';
+      e.dataTransfer.setData('text/plain', libId);
+      setTransparentDragImage(e);
+      if (selectedLibIds.has(libId) && selectedLibIds.size > 1){
+        currentDrag = { origin:'library-multi', libIds: Array.from(selectedLibIds) };
+      } else {
+        if (selectedLibIds.size && !selectedLibIds.has(libId)){
+          selectedLibIds.clear();
+          updateLibSelectionUI();
+        }
+        currentDrag = { origin:'library', libId };
+      }
+      requestAnimationFrame(()=>el.classList.add('dragging'));
+    });
+    el.addEventListener('dragend', ()=>{
+      el.classList.remove('dragging');
+      currentDrag = null;
+      closeAllGaps();
+      canvasArea.classList.remove('dropready');
+    });
+  }
+
+  return el;
+}

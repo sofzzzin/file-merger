@@ -144,7 +144,17 @@ if (currentDrag.origin === 'library' || currentDrag.origin === 'library-multi'){
       remaining.splice(insertAt, 0, ...movedItems);
       pages = remaining;
     }
-    selectedIds.clear();
+selectedIds.clear();
+  } else if (currentDrag.origin === 'canvas-section'){
+    // Arrastrar un divisor de sección: mueve todas sus páginas juntas
+    const sec = sections.find(s=>s.id === currentDrag.sectionId);
+    if (!sec) return;
+    const secPageIds = new Set(sec.pageIds);
+    const movedItems = pages.filter(p=>secPageIds.has(p.id));
+    if (!movedItems.length) return;
+    const remaining = pages.filter(p=>!secPageIds.has(p.id));
+    remaining.splice(targetIndex, 0, ...movedItems);
+    pages = remaining;
   }
 
   currentDrag = null;

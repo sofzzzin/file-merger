@@ -96,7 +96,7 @@ libraryPanel.addEventListener('drop', e=>{
     
     // 🔴 CAMBIO AQUÍ: Manejar tanto single como multi
     let ids;
-    if (currentDrag.origin === 'canvas-multi') {
+if (currentDrag.origin === 'canvas-multi') {
       // Asegurar que pageIds es un array
       ids = Array.isArray(currentDrag.pageIds) ? currentDrag.pageIds : [currentDrag.pageIds];
       console.log('Moviendo múltiples páginas a biblioteca:', ids);
@@ -105,12 +105,14 @@ libraryPanel.addEventListener('drop', e=>{
       console.log('Moviendo una página a biblioteca:', ids);
     }
     
-    movePagesToLibrary(ids);
+    // Si se arrastran múltiples páginas juntas, se crea una sección en la biblioteca
+    const groupAsSection = currentDrag.origin === 'canvas-multi' && ids.length > 1;
+    movePagesToLibrary(ids, groupAsSection);
     currentDrag = null;
   }
 });
 
-function movePagesToLibrary(pageIds){
+function movePagesToLibrary(pageIds, groupAsSection){
   // Asegurar que pageIds es un array
   const ids = Array.isArray(pageIds) ? pageIds : [pageIds];
   const idSet = new Set(ids);
@@ -128,6 +130,7 @@ function movePagesToLibrary(pageIds){
   pages = pages.filter(p => !pageIdsToRemove.has(p.id));
   
   // Procesar cada página movida
+  const newLibIds = [];
   moving.forEach(p => {
     const libId = 'libpage' + (libPageCounter++);
     libraryItemsMap[libId] = {
@@ -143,7 +146,18 @@ function movePagesToLibrary(pageIds){
       status:'ready'
     };
     libraryOrder.push(libId);
+    newLibIds.push(libId);
   });
+  
+  // Si se movieron varias páginas juntas, agruparlas en una sección de biblioteca
+  if (groupAsSection && newLibIds.length > 1){
+    librarySections.push({
+      id: 'libsec' + (libSectionCounter++),
+      name: getNextLibSectionName(),
+      libIds: newLibIds
+    });
+    armUndo('library', librarySections[librarySections.length-1].id);
+  }
   
   // Limpiar selección SOLO si estamos moviendo desde canvas
   selectedIds.clear();
@@ -152,5 +166,9 @@ function movePagesToLibrary(pageIds){
   renderPageList();
   
   const count = moving.length;
-  showToast(count === 1 ? 'Página enviada a la biblioteca.' : count + ' páginas enviadas a la biblioteca.');
+  if (groupAsSection && newLibIds.length > 1){
+    showToast('Sección creada en la biblioteca. Puedes deshacerla con Ctrl+Z durante 20 segundos.');
+  } else {
+    showToast(count === 1 ? 'Página enviada a la biblioteca.' : count + ' páginas enviadas a la biblioteca.');
+  }
 }
