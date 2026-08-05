@@ -15,6 +15,10 @@ function getDragCount(e){
   if (currentDrag && currentDrag.origin === 'canvas'){
     return 1;
   }
+  // Múltiples ítems de la biblioteca
+  if (currentDrag && currentDrag.origin === 'library-multi'){
+    return Array.isArray(currentDrag.libIds) ? currentDrag.libIds.length : 1;
+  }
   return 0;
 }
 

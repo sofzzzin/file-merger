@@ -1,7 +1,7 @@
 canvasArea.addEventListener('dragover', e=>{
   if (!currentDrag) return;
   e.preventDefault();
-  e.dataTransfer.dropEffect = currentDrag.origin === 'library' ? 'copy' : 'move';
+e.dataTransfer.dropEffect = (currentDrag.origin === 'library' || currentDrag.origin === 'library-multi') ? 'copy' : 'move';
   canvasArea.classList.add('dropready');
 
   if (pageList.classList.contains('grid-mode')){
@@ -49,48 +49,59 @@ canvasArea.addEventListener('drop', e=>{
     closeAllGaps();
   }
 
-  if (currentDrag.origin === 'library'){
-    const item = libraryItemsMap[currentDrag.libId];
-    if (!item) return;
+if (currentDrag.origin === 'library' || currentDrag.origin === 'library-multi'){
+    const libIds = currentDrag.origin === 'library-multi'
+      ? (Array.isArray(currentDrag.libIds) ? currentDrag.libIds : [currentDrag.libIds])
+      : [currentDrag.libId];
     let newItems = [];
-    if (item.kind === 'file'){
-      if (item.type === 'pdf'){
-        const src = sources[item.sourceId];
-        newItems = src.pageThumbs.map((pt, i)=>(
-          {
+    libIds.forEach(libId=>{
+      const item = libraryItemsMap[libId];
+      if (!item) return;
+      if (item.kind === 'file'){
+        if (item.type === 'pdf'){
+          const src = sources[item.sourceId];
+          if (src && src.pageThumbs){
+            src.pageThumbs.forEach((pt, i)=>{
+              newItems.push({
+                id: 'p' + (idCounter++),
+                sourceId: item.sourceId,
+                type:'pdf',
+                pageIndex: i,
+                thumb: pt.thumb,
+                label: item.name,
+                w: pt.w, h: pt.h
+              });
+            });
+          }
+        } else {
+          const src = sources[item.sourceId];
+          newItems.push({
             id: 'p' + (idCounter++),
             sourceId: item.sourceId,
-            type:'pdf',
-            pageIndex: i,
-            thumb: pt.thumb,
+            type:'image',
+            thumb: src.dataUrl,
             label: item.name,
-            w: pt.w, h: pt.h
-          }
-        ));
+            w: src.w, h: src.h
+          });
+        }
       } else {
-        const src = sources[item.sourceId];
-        newItems = [{
+        newItems.push({
           id: 'p' + (idCounter++),
           sourceId: item.sourceId,
-          type:'image',
-          thumb: src.dataUrl,
+          type: item.type,
+          pageIndex: item.pageIndex,
+          thumb: item.thumb,
           label: item.name,
-          w: src.w, h: src.h
-        }];
+          w: item.w, h: item.h
+        });
       }
-    } else {
-      newItems = [{
-        id: 'p' + (idCounter++),
-        sourceId: item.sourceId,
-        type: item.type,
-        pageIndex: item.pageIndex,
-        thumb: item.thumb,
-        label: item.name,
-        w: item.w, h: item.h
-      }];
-    }
+    });
     pages.splice(targetIndex, 0, ...newItems);
-  } else if (currentDrag.origin === 'canvas'){
+    if (currentDrag.origin === 'library-multi'){
+      selectedLibIds.clear();
+      updateLibSelectionUI();
+    }
+} else if (currentDrag.origin === 'canvas'){
    const fromIndex = pages.findIndex(p=>p.id === currentDrag.pageId);
     if (fromIndex === -1) return;
     const [moved] = pages.splice(fromIndex, 1);

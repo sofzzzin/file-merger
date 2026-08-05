@@ -70,10 +70,23 @@
       <input type="file" id="addMoreInput" multiple accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg">
 
       <div id="workspaceBody">
-        <div id="libraryPanel">
-          <div class="eyebrow">Biblioteca</div>
-          <div id="libraryList"></div>
+<div id="libraryPanel">
+          <div class="libHeader">
+            <div class="eyebrow">Biblioteca</div>
+            <button class="libSelectAllBtn" id="libSelectAllBtn" title="Seleccionar todo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              <span>Seleccionar todo</span>
+            </button>
+          </div>
+<div id="libraryList"></div>
           <div id="libraryEmpty">Aquí aparecerán tus archivos. Arrástralos al lienzo para armar tu documento, o arrastra páginas del lienzo aquí para guardarlas.</div>
+          <div id="libSelectionBar">
+            <span class="libSelCount" id="libSelCount">0 seleccionados</span>
+            <button class="btn danger" id="libDeleteSelectedBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            </button>
+            <button class="btn" id="libCancelSelectionBtn">X</button>
+          </div>
         </div>
         <div id="canvasArea">
           <div id="pageList"></div>

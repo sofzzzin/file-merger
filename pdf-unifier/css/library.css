@@ -11,6 +11,15 @@
   font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;color:var(--muted);
   text-transform:uppercase;margin:0 4px 12px;
 }
+.libHeader{display:flex;align-items:center;justify-content:space-between;margin:0 4px 12px;}
+.libHeader .eyebrow{margin:0;}
+.libSelectAllBtn{
+  display:flex;align-items:center;gap:5px;border:none;background:transparent;cursor:pointer;
+  color:var(--blue);font-family:var(--sans);font-size:11px;font-weight:600;padding:4px 8px;border-radius:999px;
+  transition:background .15s ease,color .15s ease;
+}
+.libSelectAllBtn:hover{background:var(--blue-soft);color:var(--blue-dark);}
+.libSelectAllBtn svg{width:13px;height:13px;}
 #libraryEmpty{color:#aab4c6;font-size:12.5px;padding:0 4px;line-height:1.55;}
 .libItem{
   display:flex;gap:10px;align-items:center;
@@ -59,6 +68,38 @@
 .libItem.loading .libThumbWrap svg{width:20px;height:20px;color:var(--blue);}
 @keyframes pulse{0%,100%{opacity:.55;}50%{opacity:1;}}
 .libItem.loading .libThumbWrap{animation:pulse 1.4s ease-in-out infinite;}
+
+/* ── Selección múltiple en la biblioteca ── */
+.libItem{position:relative;}
+.libItem.selected{
+  border-color:var(--blue);
+  box-shadow:0 0 0 3px rgba(61,127,255,0.22), 0 6px 16px -8px rgba(61,127,255,0.35);
+}
+.libSelectDot{
+  position:absolute;top:5px;left:5px;z-index:6;width:20px;height:20px;border-radius:50%;
+  background:rgba(255,255,255,0.92);border:2px solid rgba(28,42,69,0.2);
+  display:flex;align-items:center;justify-content:center;opacity:0;
+  transition:opacity .15s ease;cursor:pointer;
+}
+.libItem:hover .libSelectDot{opacity:1;}
+.libItem.selected .libSelectDot{opacity:1;background:var(--blue);border-color:var(--blue);}
+.libSelectDot svg{width:11px;height:11px;color:#fff;opacity:0;transition:opacity .1s ease;}
+.libItem.selected .libSelectDot svg{opacity:1;}
+
+#libSelectionBar{
+  position:sticky;bottom:12px;margin-top:14px;
+  background:rgba(28,42,69,0.94);color:#fff;border-radius:13px;padding:8px 10px 8px 14px;
+  display:flex;align-items:center;gap:8px;z-index:8;font-size:12.5px;
+  box-shadow:0 10px 24px -12px rgba(28,42,69,0.5);
+  opacity:0;visibility:hidden;transform:translateY(8px);
+  transition:opacity .2s ease,visibility .2s ease,transform .2s ease;
+}
+#libSelectionBar.show{opacity:1;visibility:visible;transform:translateY(0);}
+#libSelectionBar .libSelCount{font-size:12px;font-weight:600;white-space:nowrap;margin-right:2px;}
+#libSelectionBar button.btn{border-color:rgba(255,255,255,0.18);background:rgba(255,255,255,0.06);color:#fff;padding:6px 10px;font-size:12px;}
+#libSelectionBar button.btn:hover{border-color:var(--blue);color:#bcd3ff;}
+#libSelectionBar button.btn.danger{background:var(--danger);border-color:var(--danger);color:#fff;}
+
 .libDel{
   flex:0 0 auto;width:22px;height:22px;border-radius:50%;border:none;
   background:transparent;color:#c3cbdb;display:flex;align-items:center;justify-content:center;

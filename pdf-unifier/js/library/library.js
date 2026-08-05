@@ -1,6 +1,7 @@
 function renderLibrary(){
   libraryList.innerHTML = '';
   libraryEmpty.style.display = libraryOrder.length === 0 ? 'block' : 'none';
+  updateLibSelectionUI();
 
   libraryOrder.forEach(libId=>{
     const item = libraryItemsMap[libId];
@@ -27,6 +28,16 @@ function renderLibrary(){
       img.src = item.thumb;
       img.addEventListener('click', e=>{ e.stopPropagation(); openLightbox([item.thumb], 0); });
       thumbWrap.appendChild(img);
+    }
+
+    // Dot de selección (solo para ítems listos)
+    if (!isLoading && !isError){
+      const selectDot = document.createElement('div');
+      selectDot.className = 'libSelectDot';
+      selectDot.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+      selectDot.addEventListener('mousedown', e=>e.stopPropagation());
+      selectDot.addEventListener('click', e=>{ e.stopPropagation(); toggleLibSelect(libId); });
+      el.appendChild(selectDot);
     }
 
     const info = document.createElement('div');
@@ -96,11 +107,27 @@ function renderLibrary(){
     el.appendChild(del);
 
     if (!isLoading && !isError){
-el.addEventListener('dragstart', e=>{
+      el.addEventListener('click', e=>{
+        // Clic sobre el cuerpo de la tarjeta: si hay selección activa, lo alterna
+        if (e.target.closest('.libSelectDot') || e.target.closest('.libDel')) return;
+        if (selectedLibIds.size > 0){
+          toggleLibSelect(libId);
+        }
+      });
+      el.addEventListener('dragstart', e=>{
         e.dataTransfer.effectAllowed = 'copy';
         e.dataTransfer.setData('text/plain', libId);
         setTransparentDragImage(e);
-        currentDrag = { origin:'library', libId };
+        // Si hay selección múltiple y este ítem está seleccionado, arrastra todos
+        if (selectedLibIds.has(libId) && selectedLibIds.size > 1){
+          currentDrag = { origin:'library-multi', libIds: Array.from(selectedLibIds) };
+        } else {
+          if (selectedLibIds.size && !selectedLibIds.has(libId)){
+            selectedLibIds.clear();
+            updateLibSelectionUI();
+          }
+          currentDrag = { origin:'library', libId };
+        }
         requestAnimationFrame(()=>el.classList.add('dragging'));
       });
       el.addEventListener('dragend', ()=>{
@@ -114,3 +141,66 @@ el.addEventListener('dragstart', e=>{
     libraryList.appendChild(el);
   });
 }
+
+function toggleLibSelect(libId){
+  if (selectedLibIds.has(libId)) selectedLibIds.delete(libId);
+  else selectedLibIds.add(libId);
+  updateLibSelectionUI();
+}
+
+function updateLibSelectionUI(){
+  const n = selectedLibIds.size;
+  libSelectionBar.classList.toggle('show', n > 0);
+  libSelCount.textContent = n + (n === 1 ? ' seleccionado' : ' seleccionados');
+  document.querySelectorAll('#libraryList .libItem').forEach(el=>{
+    el.classList.toggle('selected', selectedLibIds.has(el.dataset.libId));
+  });
+  // Filtra solo ítems listos (no loading/error)
+  const selectable = libraryOrder.filter(libId=>{
+    const it = libraryItemsMap[libId];
+    return it && it.status === 'ready';
+  });
+  const allSelected = selectable.length > 0 && n === selectable.length;
+  libSelectAllBtn.innerHTML = allSelected
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>Deseleccionar todo'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Seleccionar todo';
+}
+
+function toggleSelectAllLib(){
+  const selectable = libraryOrder.filter(libId=>{
+    const it = libraryItemsMap[libId];
+    return it && it.status === 'ready';
+  });
+  if (!selectable.length) return;
+  if (selectedLibIds.size === selectable.length){
+    selectedLibIds.clear();
+  } else {
+    selectedLibIds = new Set(selectable);
+  }
+  updateLibSelectionUI();
+}
+
+libSelectAllBtn.addEventListener('click', toggleSelectAllLib);
+libCancelSelectionBtn.addEventListener('click', ()=>{ selectedLibIds.clear(); updateLibSelectionUI(); });
+libDeleteSelectedBtn.addEventListener('click', async ()=>{
+  const n = selectedLibIds.size;
+  if (!n) return;
+  const ok = await confirmDialog(
+    '¿Seguro que quieres eliminar ' + n + (n===1 ? ' elemento' : ' elementos') +
+    ' de la biblioteca? Podrás recuperarlo' + (n===1?'':'s') + ' desde la papelera de reciclaje.'
+  );
+  if (!ok) return;
+  const idSet = new Set(selectedLibIds);
+  const removed = libraryOrder.filter(id=>idSet.has(id));
+  removed.forEach(libId=>{
+    const item = libraryItemsMap[libId];
+    if (!item) return;
+    libraryOrder = libraryOrder.filter(id=>id!==libId);
+    delete libraryItemsMap[libId];
+    addToTrash('library-item', item);
+  });
+  selectedLibIds.clear();
+  updateLibSelectionUI();
+  renderLibrary();
+  showToast(n === 1 ? 'Elemento movido a la papelera.' : n + ' elementos movidos a la papelera.');
+});
