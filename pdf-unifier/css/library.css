@@ -11,8 +11,9 @@
   font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;color:var(--muted);
   text-transform:uppercase;margin:0 4px 12px;
 }
-.libHeader{display:flex;align-items:center;justify-content:space-between;margin:0 4px 12px;}
-.libHeader .eyebrow{margin:0;}
+.libHeader{display:flex;flex-direction:column;gap:8px;margin:0 4px 12px;}
+.libHeader .eyebrow{margin:0;font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;}
+.libHeaderActions{display:flex;align-items:center;justify-content:flex-start;gap:4px;flex-wrap:wrap;}
 .libSelectAllBtn{
   display:flex;align-items:center;gap:5px;border:none;background:transparent;cursor:pointer;
   color:var(--blue);font-family:var(--sans);font-size:11px;font-weight:600;padding:4px 8px;border-radius:999px;

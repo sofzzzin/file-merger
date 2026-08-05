@@ -90,12 +90,18 @@ function renderPageList(){
   });
 
   // Si no hay secciones, mantener el comportamiento original (gaps entre todas)
-  pageList.appendChild(makeGap(0));
+pageList.appendChild(makeGap(0));
   let flatIdx = 0;
   ordered.forEach(entry=>{
     if (entry.type === 'divider'){
-      pageList.appendChild(makeSectionDivider(entry.sec, entry.sec.pageIds.length));
+      // Agrupar las páginas de la sección en un card con cabecera
+      const card = makeCanvasSectionCard(entry.sec);
+      pageList.appendChild(card);
+      pageList.appendChild(makeGap(flatIdx + 1));
+      flatIdx += entry.sec.pageIds.length;
     } else {
+      // Saltar las páginas que ya se renderizaron dentro de su card de sección
+      if (placed.has(entry.page.id)) return;
       pageList.appendChild(makeCard(entry.page, flatIdx));
       pageList.appendChild(makeGap(flatIdx + 1));
       flatIdx++;
@@ -149,9 +155,14 @@ function makeCard(p, idx){
   delBtn.className = 'iconBtn delBtn';
   delBtn.title = 'Eliminar';
   delBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
-  delBtn.addEventListener('click', (e)=>{
+delBtn.addEventListener('click', (e)=>{
     e.stopPropagation();
     pages = pages.filter(x=>x.id !== p.id);
+    // Quitar la página de su sección del lienzo
+    sections.forEach(sec=>{
+      sec.pageIds = sec.pageIds.filter(id=>id !== p.id);
+    });
+    sections = sections.filter(sec=>sec.pageIds.length > 0);
     addToTrash('canvas-page', p);
     selectedIds.delete(p.id);
     renderPageList();

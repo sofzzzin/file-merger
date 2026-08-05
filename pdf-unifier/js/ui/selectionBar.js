@@ -27,9 +27,14 @@ deleteSelectedBtn.addEventListener('click', async ()=>{
     ' del lienzo? Podrás recuperarla' + (n===1?'':'s') + ' desde la papelera de reciclaje.'
   );
   if (!ok) return;
-  const idSet = new Set(selectedIds);
+const idSet = new Set(selectedIds);
   const removed = pages.filter(p=>idSet.has(p.id));
   pages = pages.filter(p=>!idSet.has(p.id));
+  // Quitar las páginas eliminadas de sus secciones del lienzo
+  sections.forEach(sec=>{
+    sec.pageIds = sec.pageIds.filter(id=>!idSet.has(id));
+  });
+  sections = sections.filter(sec=>sec.pageIds.length > 0);
   removed.forEach(p=>addToTrash('canvas-page', p));
   selectedIds.clear();
   updateSelectionUI();

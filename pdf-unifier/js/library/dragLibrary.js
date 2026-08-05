@@ -123,8 +123,14 @@ function movePagesToLibrary(pageIds, groupAsSection){
     return;
   }
   
-  // Guardar los IDs de las páginas que se van a mover
+// Guardar los IDs de las páginas que se van a mover
   const pageIdsToRemove = new Set(moving.map(p => p.id));
+  
+  // Quitar las páginas movidas de sus secciones del lienzo
+  sections.forEach(sec=>{
+    sec.pageIds = sec.pageIds.filter(id => !pageIdsToRemove.has(id));
+  });
+  sections = sections.filter(sec=>sec.pageIds.length > 0);
   
   // Filtrar las páginas que NO están en el set
   pages = pages.filter(p => !pageIdsToRemove.has(p.id));

@@ -4,11 +4,26 @@ canvasArea.addEventListener('dragover', e=>{
 e.dataTransfer.dropEffect = (currentDrag.origin === 'library' || currentDrag.origin === 'library-multi') ? 'copy' : 'move';
   canvasArea.classList.add('dropready');
 
+// Limpiar indicadores de arrastre sobre cards de sección
+  document.querySelectorAll('.canvasSectionCard').forEach(c=>c.classList.remove('drag-inside','drag-outside'));
+
   if (pageList.classList.contains('grid-mode')){
     clearDropTargets();
     const nearest = findNearestCard(e);
     if (nearest) nearest.classList.add('dropTarget');
     return;
+  }
+
+  // Indicador dentro/fuera del card de sección
+  const sectionCards = Array.from(document.querySelectorAll('.canvasSectionCard'));
+  const card = sectionCards.find(c=>{
+    const r = c.getBoundingClientRect();
+    return e.clientY >= r.top && e.clientY <= r.bottom;
+  });
+  if (card){
+    card.classList.add('drag-inside');
+  } else {
+    sectionCards.forEach(c=>c.classList.add('drag-outside'));
   }
 
   const gaps = Array.from(document.querySelectorAll('.gap'));

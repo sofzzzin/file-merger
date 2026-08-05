@@ -15,17 +15,23 @@ function renderLibrary(){
     if (block) libraryList.appendChild(block);
   });
 
-  // Renderizar ítems sueltos (no pertenecientes a ninguna sección)
-  const header = document.createElement('div');
-  header.className = 'libSectionFreeHeader';
-  libraryList.appendChild(header);
-
-for (const libId of libraryOrder){
-    const item = libraryItemsMap[libId];
-    if (!item) return;
-    if (sectioned.has(libId)) continue; // ya se mostró dentro de su sección
-    const el = makeLibraryItemElement(libId, item);
-    if (el) libraryList.appendChild(el);
+// Renderizar ítems sueltos (no pertenecientes a ninguna sección)
+  const looseItems = libraryOrder.filter(libId=>{
+    const it = libraryItemsMap[libId];
+    return it && !sectioned.has(libId);
+  });
+  if (looseItems.length){
+    if (librarySections.length){
+      const header = document.createElement('div');
+      header.className = 'libSectionFreeHeader';
+      libraryList.appendChild(header);
+    }
+    looseItems.forEach(libId=>{
+      const item = libraryItemsMap[libId];
+      if (!item) return;
+      const el = makeLibraryItemElement(libId, item);
+      if (el) libraryList.appendChild(el);
+    });
   }
 }
 
@@ -77,15 +83,20 @@ libDeleteSelectedBtn.addEventListener('click', async ()=>{
     ' de la biblioteca? Podrás recuperarlo' + (n===1?'':'s') + ' desde la papelera de reciclaje.'
   );
   if (!ok) return;
-  const idSet = new Set(selectedLibIds);
+const idSet = new Set(selectedLibIds);
   const removed = libraryOrder.filter(id=>idSet.has(id));
   removed.forEach(libId=>{
     const item = libraryItemsMap[libId];
     if (!item) return;
+    // Quitar de cualquier sección de biblioteca
+    librarySections.forEach(sec=>{
+      sec.libIds = sec.libIds.filter(id=>id!==libId);
+    });
     libraryOrder = libraryOrder.filter(id=>id!==libId);
     delete libraryItemsMap[libId];
     addToTrash('library-item', item);
   });
+  librarySections = librarySections.filter(sec=>sec.libIds.length > 0);
   selectedLibIds.clear();
   updateLibSelectionUI();
   renderLibrary();

@@ -279,11 +279,7 @@ function makeSectionDivider(sec, pageCount){
   div.draggable = true;
   div.dataset.sectionId = sec.id;
 
-  const grip = document.createElement('div');
-  grip.className = 'secGrip';
-  grip.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h6M9 12h6M9 18h6"/></svg>';
-
-  const label = document.createElement('div');
+const label = document.createElement('div');
   label.className = 'secLabel';
   label.textContent = sec.name;
   label.title = 'Doble clic para renombrar';
@@ -298,6 +294,22 @@ function makeSectionDivider(sec, pageCount){
 
   const actions = document.createElement('div');
   actions.className = 'secActions';
+
+  const collapseBtn = document.createElement('button');
+  collapseBtn.className = 'secActionBtn secCollapseBtn';
+  collapseBtn.title = 'Colapsar / expandir';
+  collapseBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+  collapseBtn.addEventListener('click', e=>{
+    e.stopPropagation();
+    const card = div.closest('.canvasSectionCard');
+    if (card){
+      card.classList.toggle('collapsed');
+      collapseBtn.innerHTML = card.classList.contains('collapsed')
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+    }
+  });
+  actions.appendChild(collapseBtn);
 
   const exportBtnSec = document.createElement('button');
   exportBtnSec.className = 'secActionBtn sectionExportBtn';
@@ -317,9 +329,12 @@ function makeSectionDivider(sec, pageCount){
   });
   actions.appendChild(delBtn);
 
-  div.appendChild(grip);
+// Línea divisoria elástica entre el conteo y las acciones
+  const line = document.createElement('div');
+  line.className = 'secLine';
   div.appendChild(label);
   div.appendChild(count);
+  div.appendChild(line);
   div.appendChild(actions);
 
   div.addEventListener('dragstart', e=>{
@@ -338,6 +353,29 @@ function makeSectionDivider(sec, pageCount){
   return div;
 }
 
+// Crea el card de sección en el lienzo (header + páginas)
+function makeCanvasSectionCard(sec){
+  const card = document.createElement('div');
+  card.className = 'canvasSectionCard';
+  card.dataset.sectionId = sec.id;
+
+  const header = makeSectionDivider(sec, sec.pageIds.length);
+  card.appendChild(header);
+
+  const body = document.createElement('div');
+  body.className = 'canvasSectionBody';
+  sec.pageIds.forEach(pId=>{
+    const p = pages.find(x=>x.id === pId);
+    if (p){
+      const idx = pages.findIndex(x=>x.id === pId);
+      body.appendChild(makeCard(p, idx));
+    }
+  });
+  card.appendChild(body);
+
+  return card;
+}
+
 // ── Render de secciones de biblioteca ────────────────────────
 
 function renderLibrarySectionBlock(sec){
@@ -347,9 +385,8 @@ function renderLibrarySectionBlock(sec){
   const header = document.createElement('div');
   header.className = 'libSectionHeader';
 
-  const grip = document.createElement('div');
-  grip.className = 'secGrip';
-  grip.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h6M9 12h6M9 18h6"/></svg>';
+  const headerInfo = document.createElement('div');
+  headerInfo.className = 'libSecInfo';
 
   const label = document.createElement('div');
   label.className = 'secLabel';
@@ -364,6 +401,25 @@ function renderLibrarySectionBlock(sec){
   count.className = 'secCount';
   count.textContent = sec.libIds.length + (sec.libIds.length === 1 ? ' elemento' : ' elementos');
 
+  headerInfo.appendChild(label);
+  headerInfo.appendChild(count);
+
+  const actions = document.createElement('div');
+  actions.className = 'secActions';
+
+  const collapseBtn = document.createElement('button');
+  collapseBtn.className = 'secActionBtn secCollapseBtn';
+  collapseBtn.title = 'Colapsar / expandir';
+  collapseBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+  collapseBtn.addEventListener('click', e=>{
+    e.stopPropagation();
+    wrap.classList.toggle('collapsed');
+    collapseBtn.innerHTML = wrap.classList.contains('collapsed')
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+  });
+  actions.appendChild(collapseBtn);
+
   const delBtn = document.createElement('button');
   delBtn.className = 'secActionBtn secDelBtn';
   delBtn.title = 'Eliminar sección';
@@ -372,20 +428,22 @@ function renderLibrarySectionBlock(sec){
     e.stopPropagation();
     deleteLibrarySection(sec.id);
   });
+  actions.appendChild(delBtn);
 
-  header.appendChild(grip);
-  header.appendChild(label);
-  header.appendChild(count);
-  header.appendChild(delBtn);
+  header.appendChild(headerInfo);
+  header.appendChild(actions);
   wrap.appendChild(header);
 
   // Contenedor de los ítems de la sección
+  const body = document.createElement('div');
+  body.className = 'libSectionBody';
   sec.libIds.forEach(libId=>{
     const item = libraryItemsMap[libId];
     if (!item) return;
     const el = makeLibraryItemElement(libId, item);
-    if (el) wrap.appendChild(el);
+    if (el) body.appendChild(el);
   });
+  wrap.appendChild(body);
 
   return wrap;
 }

@@ -28,12 +28,17 @@ function renderPageList(){
     }
   });
 
-  pageList.appendChild(makeGap(0));
+pageList.appendChild(makeGap(0));
   let flatIdx = 0;
   ordered.forEach(entry=>{
     if (entry.type === 'divider'){
-      pageList.appendChild(makeSectionDivider(entry.sec, entry.sec.pageIds.length));
+      const card = makeCanvasSectionCard(entry.sec);
+      pageList.appendChild(card);
+      pageList.appendChild(makeGap(flatIdx + 1));
+      flatIdx += entry.sec.pageIds.length;
     } else {
+      // Saltar las páginas que ya se renderizaron dentro de su card de sección
+      if (placed.has(entry.page.id)) return;
       pageList.appendChild(makeCard(entry.page, flatIdx));
       pageList.appendChild(makeGap(flatIdx + 1));
       flatIdx++;
