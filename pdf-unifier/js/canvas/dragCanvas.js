@@ -1,7 +1,8 @@
 canvasArea.addEventListener('dragover', e=>{
-  if (!currentDrag) return;
+if (!currentDrag) return;
   e.preventDefault();
-e.dataTransfer.dropEffect = (currentDrag.origin === 'library' || currentDrag.origin === 'library-multi') ? 'copy' : 'move';
+  const copyOrigins = ['library','library-multi','library-section','library-section-multi'];
+  e.dataTransfer.dropEffect = copyOrigins.includes(currentDrag.origin) ? 'copy' : 'move';
   canvasArea.classList.add('dropready');
 
 // Limpiar indicadores de arrastre sobre cards de sección
@@ -43,7 +44,7 @@ canvasArea.addEventListener('dragleave', e=>{
 });
 
 // En js/canvas/dragCanvas.js - dentro del evento drop de canvasArea
-canvasArea.addEventListener('drop', e=>{
+canvasArea.addEventListener('drop', async e=>{
   e.preventDefault();
   canvasArea.classList.remove('dropready');
   if (!currentDrag) return;
@@ -160,6 +161,46 @@ if (currentDrag.origin === 'library' || currentDrag.origin === 'library-multi'){
       pages = remaining;
     }
 selectedIds.clear();
+} else if (currentDrag.origin === 'library-section' || currentDrag.origin === 'library-section-multi'){
+    // Arrastrar una o varias secciones de biblioteca al lienzo
+    const isMulti = currentDrag.origin === 'library-section-multi';
+    const secIds = isMulti
+      ? (Array.isArray(currentDrag.libSectionIds) ? currentDrag.libSectionIds : [currentDrag.libSectionIds])
+      : [currentDrag.libSectionId];
+    const secs = secIds.map(id => librarySections.find(s => s.id === id)).filter(Boolean);
+    if (!secs.length) return;
+
+    // Convertir todos los ítems de las secciones en páginas del lienzo
+    let newPages = [];
+    secs.forEach(sec=>{
+      newPages = newPages.concat(buildPagesFromLibSection(sec));
+    });
+
+    // Preguntar al usuario si quiere conservar la(s) sección(es)
+    const keep = await sectionKeepDialog(secs.length === 1 ? secs[0].name : 'las secciones seleccionadas');
+
+    if (keep){
+      // Agrupar todas las páginas en una nueva sección del lienzo
+      const pageIds = newPages.map(p=>p.id);
+      const sec = {
+        id: 'sec' + (sectionCounter++),
+        name: secs.length === 1 ? secs[0].name : getNextCanvasSectionName(),
+        pageIds
+      };
+      sections.push(sec);
+      armUndo('canvas', sec.id);
+      pages.splice(targetIndex, 0, ...newPages);
+      showToast('Sección creada en el lienzo. Puedes deshacerla con Ctrl+Z durante 20 segundos.');
+    } else {
+      // Solo insertar las páginas sueltas
+      pages.splice(targetIndex, 0, ...newPages);
+      showToast('Páginas agregadas al lienzo.');
+    }
+
+    if (isMulti){
+      selectedLibSectionIds.clear();
+      updateLibSectionSelectionUI();
+    }
   } else if (currentDrag.origin === 'canvas-section'){
     // Arrastrar un divisor de sección: mueve todas sus páginas juntas
     const sec = sections.find(s=>s.id === currentDrag.sectionId);

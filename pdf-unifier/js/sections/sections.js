@@ -28,6 +28,82 @@ function getLibSectionOfItem(libId){
   return librarySections.find(s => s.libIds.includes(libId)) || null;
 }
 
+// ── Selección de secciones de biblioteca ─────────────────────
+
+function toggleLibSectionSelect(secId){
+  if (selectedLibSectionIds.has(secId)) selectedLibSectionIds.delete(secId);
+  else selectedLibSectionIds.add(secId);
+  updateLibSectionSelectionUI();
+}
+
+function updateLibSectionSelectionUI(){
+  document.querySelectorAll('#libraryList .libSection').forEach(el=>{
+    el.classList.toggle('selected', selectedLibSectionIds.has(el.dataset.libSectionId));
+    const dot = el.querySelector('.libSelectDot');
+    if (dot) dot.classList.toggle('checked', selectedLibSectionIds.has(el.dataset.libSectionId));
+  });
+}
+
+// ── Conversión de ítems/secciones de biblioteca a páginas del lienzo ──
+
+function buildPagesFromLibItem(item){
+  const result = [];
+  if (!item) return result;
+  if (item.status !== 'ready') return result;
+
+  if (item.kind === 'file'){
+    if (item.type === 'pdf'){
+      const src = sources[item.sourceId];
+      if (src && src.pageThumbs){
+        src.pageThumbs.forEach((pt, i)=>{
+          result.push({
+            id: 'p' + (idCounter++),
+            sourceId: item.sourceId,
+            type: 'pdf',
+            pageIndex: i,
+            thumb: pt.thumb,
+            label: item.name,
+            w: pt.w, h: pt.h
+          });
+        });
+      }
+    } else {
+      const src = sources[item.sourceId];
+      result.push({
+        id: 'p' + (idCounter++),
+        sourceId: item.sourceId,
+        type: 'image',
+        thumb: src.dataUrl,
+        label: item.name,
+        w: src.w, h: src.h
+      });
+    }
+  } else {
+    result.push({
+      id: 'p' + (idCounter++),
+      sourceId: item.sourceId,
+      type: item.type,
+      pageIndex: item.pageIndex,
+      thumb: item.thumb,
+      label: item.name,
+      w: item.w, h: item.h
+    });
+  }
+  return result;
+}
+
+// Convierte los ítems de una sección de biblioteca en páginas del lienzo
+function buildPagesFromLibSection(sec){
+  const result = [];
+  if (!sec) return result;
+  sec.libIds.forEach(libId=>{
+    const item = libraryItemsMap[libId];
+    if (!item) return;
+    result.push(...buildPagesFromLibItem(item));
+  });
+  return result;
+}
+
 // ── Deshacer (Ctrl+Z) con ventana de 20 segundos ────────────
 
 function armUndo(scope, sectionId){
@@ -381,9 +457,18 @@ function makeCanvasSectionCard(sec){
 function renderLibrarySectionBlock(sec){
   const wrap = document.createElement('div');
   wrap.className = 'libSection';
+  wrap.dataset.libSectionId = sec.id;
 
   const header = document.createElement('div');
   header.className = 'libSectionHeader';
+  header.draggable = true;
+
+  const selectDot = document.createElement('div');
+  selectDot.className = 'libSelectDot';
+  selectDot.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+  selectDot.addEventListener('mousedown', e=>e.stopPropagation());
+  selectDot.addEventListener('click', e=>{ e.stopPropagation(); toggleLibSectionSelect(sec.id); });
+  header.appendChild(selectDot);
 
   const headerInfo = document.createElement('div');
   headerInfo.className = 'libSecInfo';
@@ -432,6 +517,36 @@ function renderLibrarySectionBlock(sec){
 
   header.appendChild(headerInfo);
   header.appendChild(actions);
+
+  header.addEventListener('click', e=>{
+    if (e.target.closest('.libSelectDot') || e.target.closest('.secActionBtn')) return;
+    if (selectedLibSectionIds.size > 0) toggleLibSectionSelect(sec.id);
+  });
+
+header.addEventListener('dragstart', e=>{
+    console.log('[SECTIONS] header dragstart', sec.id, sec.name);
+    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.setData('text/plain', sec.id);
+    setTransparentDragImage(e);
+    if (selectedLibSectionIds.has(sec.id) && selectedLibSectionIds.size > 1){
+      currentDrag = { origin:'library-section-multi', libSectionIds: Array.from(selectedLibSectionIds) };
+    } else {
+      if (selectedLibSectionIds.size && !selectedLibSectionIds.has(sec.id)){
+        selectedLibSectionIds.clear();
+        updateLibSectionSelectionUI();
+      }
+      currentDrag = { origin:'library-section', libSectionId: sec.id };
+    }
+    console.log('[SECTIONS] currentDrag', JSON.stringify(currentDrag));
+    requestAnimationFrame(()=>header.classList.add('dragging'));
+  });
+  header.addEventListener('dragend', ()=>{
+    header.classList.remove('dragging');
+    currentDrag = null;
+    closeAllGaps();
+    canvasArea.classList.remove('dropready');
+  });
+
   wrap.appendChild(header);
 
   // Contenedor de los ítems de la sección
@@ -445,6 +560,7 @@ function renderLibrarySectionBlock(sec){
   });
   wrap.appendChild(body);
 
+  updateLibSectionSelectionUI();
   return wrap;
 }
 

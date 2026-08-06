@@ -15,3 +15,21 @@ function confirmDialog(message){
   });
 }
 confirmModal.addEventListener('click', e=>{ if (e.target === confirmModal) confirmCancel.click(); });
+
+function sectionKeepDialog(sectionName){
+  return new Promise(resolve=>{
+    sectionKeepMsg.textContent = '¿Mantener la sección "' + sectionName + '" al agregarla al lienzo?';
+    sectionKeepModal.classList.add('show');
+    function cleanup(result){
+      sectionKeepModal.classList.remove('show');
+      sectionKeepNoBtn.removeEventListener('click', onNo);
+      sectionKeepYesBtn.removeEventListener('click', onYes);
+      resolve(result);
+    }
+    function onNo(){ cleanup(false); }
+    function onYes(){ cleanup(true); }
+    sectionKeepNoBtn.addEventListener('click', onNo);
+    sectionKeepYesBtn.addEventListener('click', onYes);
+  });
+}
+sectionKeepModal.addEventListener('click', e=>{ if (e.target === sectionKeepModal) sectionKeepNoBtn.click(); });

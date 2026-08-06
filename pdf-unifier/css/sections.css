@@ -86,7 +86,25 @@
   display:flex;align-items:center;justify-content:space-between;gap:8px;
   padding:10px 12px;background:var(--panel);
   border-bottom:1px solid var(--border);
+  cursor:grab;user-select:none;
 }
+.libSectionHeader:active{cursor:grabbing;}
+.libSectionHeader.dragging{opacity:.4;}
+.libSectionHeader .libSelectDot{
+  position:relative;flex:0 0 auto;width:20px;height:20px;border-radius:50%;
+  background:rgba(255,255,255,0.92);border:2px solid rgba(28,42,69,0.2);
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .15s ease;cursor:pointer;opacity:.55;
+}
+.libSectionHeader .libSelectDot:hover{opacity:1;}
+.libSectionHeader .libSelectDot.checked,
+.libSection.selected .libSectionHeader .libSelectDot{
+  background:var(--blue);border-color:var(--blue);opacity:1;
+}
+.libSectionHeader .libSelectDot svg{width:11px;height:11px;color:#fff;opacity:0;transition:opacity .1s ease;}
+.libSectionHeader .libSelectDot.checked svg,
+.libSection.selected .libSectionHeader .libSelectDot svg{opacity:1;}
+.libSection.selected{border-color:var(--blue);box-shadow:0 0 0 3px rgba(61,127,255,0.22);}
 .libSecInfo{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;}
 .libSectionHeader .secLabel{
   font-family:var(--sans);font-size:12px;font-weight:700;color:var(--ink);
