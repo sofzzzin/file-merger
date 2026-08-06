@@ -59,6 +59,21 @@ function toggleSelectAll(){
 }
 selectAllBtn.addEventListener('click', toggleSelectAll);
 
+// Reordena el array `pages` para que las páginas de cada sección queden contiguas
+// (en el orden de las secciones) y las páginas sueltas al final.
+function resequencePages(){
+  const ordered = [];
+  const placed = new Set();
+  sections.forEach(sec=>{
+    sec.pageIds.forEach(id=>{
+      const p = pages.find(x=>x.id === id);
+      if (p){ ordered.push(p); placed.add(id); }
+    });
+  });
+  pages.forEach(p=>{ if (!placed.has(p.id)) ordered.push(p); });
+  pages = ordered;
+}
+
 function renderPageList(){
   pageList.innerHTML = '';
   exportBtn.disabled = pages.length === 0;

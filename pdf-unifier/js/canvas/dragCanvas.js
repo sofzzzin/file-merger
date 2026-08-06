@@ -1,3 +1,12 @@
+// Devuelve el card de sección del lienzo que contiene al cursor, o null
+function getSectionCardAt(e){
+  return Array.from(document.querySelectorAll('.canvasSectionCard')).find(c=>{
+    const r = c.getBoundingClientRect();
+    return e.clientX >= r.left && e.clientX <= r.right &&
+           e.clientY >= r.top && e.clientY <= r.bottom;
+  });
+}
+
 canvasArea.addEventListener('dragover', e=>{
 if (!currentDrag) return;
   e.preventDefault();
@@ -15,16 +24,16 @@ if (!currentDrag) return;
     return;
   }
 
-  // Indicador dentro/fuera del card de sección
-  const sectionCards = Array.from(document.querySelectorAll('.canvasSectionCard'));
-  const card = sectionCards.find(c=>{
-    const r = c.getBoundingClientRect();
-    return e.clientY >= r.top && e.clientY <= r.bottom;
-  });
+  // Indicador dentro del card de sección (para mover entre secciones)
+  const card = getSectionCardAt(e);
   if (card){
     card.classList.add('drag-inside');
+    // Si cae dentro de una sección, mostramos todas las demás como "fuera"
+    document.querySelectorAll('.canvasSectionCard').forEach(c=>{
+      if (c !== card) c.classList.add('drag-outside');
+    });
   } else {
-    sectionCards.forEach(c=>c.classList.add('drag-outside'));
+    document.querySelectorAll('.canvasSectionCard').forEach(c=>c.classList.add('drag-outside'));
   }
 
   const gaps = Array.from(document.querySelectorAll('.gap'));
@@ -48,6 +57,60 @@ canvasArea.addEventListener('drop', async e=>{
   e.preventDefault();
   canvasArea.classList.remove('dropready');
   if (!currentDrag) return;
+
+  // ── Detectar suelta DENTRO de una sección del lienzo ──
+  const sectionCardAt = getSectionCardAt(e);
+  document.querySelectorAll('.canvasSectionCard').forEach(c=>c.classList.remove('drag-inside','drag-outside'));
+
+  if (sectionCardAt){
+    if (currentDrag.origin === 'canvas' || currentDrag.origin === 'canvas-multi'){
+      // Mover página(s) del lienzo a otra sección
+      let moveIds = currentDrag.origin === 'canvas-multi'
+        ? (Array.isArray(currentDrag.pageIds) ? currentDrag.pageIds : [currentDrag.pageIds])
+        : [currentDrag.pageId];
+      const idSet = new Set(moveIds);
+      const targetSec = sections.find(s=>s.id === sectionCardAt.dataset.sectionId);
+      const srcSec = sections.find(s=> s.pageIds.some(id=>idSet.has(id)) && s.id !== (targetSec ? targetSec.id : null));
+      if (targetSec){
+        // Quitar de la sección origen (si era una sección distinta)
+        if (srcSec){
+          srcSec.pageIds = srcSec.pageIds.filter(id=>!idSet.has(id));
+        }
+        // Añadir al final de la sección objetivo
+        moveIds.forEach(id=>{
+          if (!targetSec.pageIds.includes(id)) targetSec.pageIds.push(id);
+        });
+        sections = sections.filter(sec=>sec.pageIds.length > 0);
+        resequencePages();
+        selectedIds.clear();
+        updateSelectionUI();
+        currentDrag = null;
+        renderPageList();
+        return;
+      }
+    }
+
+    if (currentDrag.origin === 'canvas-section'){
+      // Mover una sección entera a otra sección → preguntar antes
+      const srcSec = sections.find(s=>s.id === currentDrag.sectionId);
+      const targetSec = sections.find(s=>s.id === sectionCardAt.dataset.sectionId);
+      if (srcSec && targetSec && srcSec.id !== targetSec.id){
+        const ok = await confirmDialog('¿Mover la sección "' + srcSec.name + '" a la sección "' + targetSec.name + '"?');
+        if (ok){
+          // Fusionar: todos los ítems del origen pasan al destino
+          srcSec.pageIds.forEach(id=>{
+            if (!targetSec.pageIds.includes(id)) targetSec.pageIds.push(id);
+          });
+          sections = sections.filter(sec=>sec.id !== srcSec.id);
+          resequencePages();
+          showToast('Sección "' + srcSec.name + '" movida a "' + targetSec.name + '".');
+        }
+        currentDrag = null;
+        renderPageList();
+        return;
+      }
+    }
+  }
 
   let targetIndex;
   if (pageList.classList.contains('grid-mode')){

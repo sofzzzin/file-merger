@@ -31,6 +31,9 @@
 #pageList.grid-mode .pageCard:hover{border-color:var(--blue);box-shadow:0 10px 22px -10px rgba(61,127,255,0.4);}
 #pageList.grid-mode .pageCard.selected{border-color:var(--blue);}
 #pageList.grid-mode .pageCard.dropTarget{outline-color:var(--blue);}
+#pageList.grid-mode .pageCard .selectDot{opacity:1;top:8px;left:8px;width:22px;height:22px;}
+#pageList.grid-mode .pageCard .overlay{opacity:1;top:0;right:0;padding:6px;display:flex;}
+#pageList.grid-mode .pageCard .overlay .iconBtn{width:24px;height:24px;}
 .pageCard:active{cursor:grabbing;}
 .pageCard.dragging{opacity:0;}
 .pageCard.selected{border-color:var(--blue);box-shadow:0 0 0 3px rgba(61,127,255,0.25), 0 16px 34px -16px rgba(28,42,69,0.22);}

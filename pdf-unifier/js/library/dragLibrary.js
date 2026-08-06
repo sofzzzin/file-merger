@@ -80,6 +80,107 @@ document.addEventListener('drop', ()=>{
   libraryPanel.classList.remove('dragover');
   hideDragStack();
 });
+
+// ── Arrastre ENTRE secciones de la biblioteca ──────────────────
+// Devuelve el bloque de sección de biblioteca que contiene al cursor
+function getLibSectionAt(e){
+  return Array.from(document.querySelectorAll('#libraryList .libSection')).find(c=>{
+    const r = c.getBoundingClientRect();
+    return e.clientX >= r.left && e.clientX <= r.right &&
+           e.clientY >= r.top && e.clientY <= r.bottom;
+  });
+}
+
+// Al pasar sobre una sección de biblioteca (y se arrastren ítems/secciones),
+// resaltamos el destino y permitimos soltar.
+libraryList.addEventListener('dragover', e=>{
+  if (!currentDrag) return;
+  const isLibItemDrag = ['library','library-multi'].includes(currentDrag.origin);
+  const isLibSectionDrag = ['library-section','library-section-multi'].includes(currentDrag.origin);
+  if (!isLibItemDrag && !isLibSectionDrag) return;
+
+  document.querySelectorAll('#libraryList .libSection').forEach(c=>c.classList.remove('drag-inside','drag-outside'));
+  const target = getLibSectionAt(e);
+  if (target){
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    target.classList.add('drag-inside');
+    showDragStack(e);
+  }
+});
+
+libraryList.addEventListener('dragleave', e=>{
+  document.querySelectorAll('#libraryList .libSection').forEach(c=>c.classList.remove('drag-inside'));
+  hideDragStack();
+});
+
+libraryList.addEventListener('drop', async e=>{
+  document.querySelectorAll('#libraryList .libSection').forEach(c=>c.classList.remove('drag-inside','drag-outside'));
+  hideDragStack();
+  if (!currentDrag) return;
+  const target = getLibSectionAt(e);
+  if (!target) return;
+
+  const targetSec = librarySections.find(s=>s.id === target.dataset.libSectionId);
+  if (!targetSec) return;
+
+  const isLibItemDrag = ['library','library-multi'].includes(currentDrag.origin);
+  const isLibSectionDrag = ['library-section','library-section-multi'].includes(currentDrag.origin);
+
+  // Mover ítem(s) de biblioteca a la sección objetivo
+  if (isLibItemDrag){
+    e.preventDefault();
+    const moveIds = currentDrag.origin === 'library-multi'
+      ? (Array.isArray(currentDrag.libIds) ? currentDrag.libIds : [currentDrag.libIds])
+      : [currentDrag.libId];
+    const idSet = new Set(moveIds);
+    const srcSec = librarySections.find(s=> s.libIds.some(id=>idSet.has(id)) && s.id !== targetSec.id);
+
+    if (srcSec){
+      srcSec.libIds = srcSec.libIds.filter(id=>!idSet.has(id));
+    }
+    moveIds.forEach(id=>{
+      if (!targetSec.libIds.includes(id)) targetSec.libIds.push(id);
+    });
+    librarySections = librarySections.filter(sec=>sec.libIds.length > 0);
+
+    if (currentDrag.origin === 'library-multi'){
+      selectedLibIds.clear();
+      updateLibSelectionUI();
+    }
+    currentDrag = null;
+    renderLibrary();
+    showToast('Elemento(s) movido(s) a la sección "' + targetSec.name + '".');
+    return;
+  }
+
+  // Mover una sección entera a otra sección → preguntar antes
+  if (isLibSectionDrag){
+    e.preventDefault();
+    const moveSecIds = currentDrag.origin === 'library-section-multi'
+      ? (Array.isArray(currentDrag.libSectionIds) ? currentDrag.libSectionIds : [currentDrag.libSectionIds])
+      : [currentDrag.libSectionId];
+    const srcSecs = moveSecIds.map(id=>librarySections.find(s=>s.id===id)).filter(Boolean);
+    const srcSec = srcSecs.find(s=>s.id !== targetSec.id);
+    if (srcSec){
+      const ok = await confirmDialog('¿Mover la sección "' + srcSec.name + '" a la sección "' + targetSec.name + '"?');
+      if (ok){
+        srcSec.libIds.forEach(id=>{
+          if (!targetSec.libIds.includes(id)) targetSec.libIds.push(id);
+        });
+        librarySections = librarySections.filter(sec=>!srcSecs.some(s=>s.id===sec.id));
+        showToast('Sección "' + srcSec.name + '" movida a "' + targetSec.name + '".');
+      }
+    }
+    if (currentDrag.origin === 'library-section-multi'){
+      selectedLibSectionIds.clear();
+      updateLibSectionSelectionUI();
+    }
+    currentDrag = null;
+    renderLibrary();
+    return;
+  }
+});
 // En js/library/dragLibrary.js
 libraryPanel.addEventListener('drop', e=>{
   libraryPanel.classList.remove('dragover');
