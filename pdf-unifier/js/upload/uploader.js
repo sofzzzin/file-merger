@@ -1,5 +1,21 @@
 async function handleFiles(fileListRaw){
-  const files = Array.from(fileListRaw).filter(f=>{
+  const list = Array.from(fileListRaw);
+  // Detectar archivos de proyecto guardado (.json). Si se sueltan/seleccionan,
+  // se abren directamente como proyecto en lugar de procesarse como PDF/imagen.
+  const projectFiles = list.filter(f=>{
+    const t = f.type;
+    const n = f.name.toLowerCase();
+    return t === 'application/json' || n.endsWith('.json');
+  });
+  if (projectFiles.length){
+    for (const pf of projectFiles) await loadProjectFile(pf);
+    // Resetear los inputs para poder volver a abrir el mismo archivo
+    if (fileInput && fileInput.value) fileInput.value = '';
+    if (addMoreInput && addMoreInput.value) addMoreInput.value = '';
+    return;
+  }
+
+  const files = list.filter(f=>{
     const t = f.type;
     const n = f.name.toLowerCase();
     return t === 'application/pdf' || t === 'image/png' || t === 'image/jpeg' ||

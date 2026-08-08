@@ -35,7 +35,7 @@
 #dropZone svg{width:46px;height:46px;color:var(--blue);}
 #dropZone.dragover svg{color:var(--blue-dark);}
 #dropZone .ddtitle{font-size:16px;font-weight:700;color:var(--ink);}
-#dropZone .ddformats{display:flex;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;}
+#dropZone .ddformats{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;}
 #dropZone .ddformats span{border:1px solid var(--border);border-radius:999px;padding:4px 10px;color:var(--blue-dark);background:var(--blue-soft);font-weight:600;}
 #fileInput{display:none;}
 #dropScreen .hint{margin-top:22px;font-size:12.5px;color:#a9b3c6;}
