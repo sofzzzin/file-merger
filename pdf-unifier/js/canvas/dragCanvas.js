@@ -17,8 +17,18 @@ if (!currentDrag) return;
 // Limpiar indicadores de arrastre sobre cards de sección
   document.querySelectorAll('.canvasSectionCard').forEach(c=>c.classList.remove('drag-inside','drag-outside'));
 
-  if (pageList.classList.contains('grid-mode')){
+if (pageList.classList.contains('grid-mode')){
     clearDropTargets();
+    // Detectar cards de sección también en modo grid
+    const gcard = getSectionCardAt(e);
+    if (gcard){
+      gcard.classList.add('drag-inside');
+      document.querySelectorAll('.canvasSectionCard').forEach(c=>{
+        if (c !== gcard) c.classList.add('drag-outside');
+      });
+    } else {
+      document.querySelectorAll('.canvasSectionCard').forEach(c=>c.classList.add('drag-outside'));
+    }
     const nearest = findNearestCard(e);
     if (nearest) nearest.classList.add('dropTarget');
     return;
@@ -62,12 +72,25 @@ canvasArea.addEventListener('drop', async e=>{
   const sectionCardAt = getSectionCardAt(e);
   document.querySelectorAll('.canvasSectionCard').forEach(c=>c.classList.remove('drag-inside','drag-outside'));
 
-  // Contexto de soltado dentro de una sección (a partir del gap abierto del cuerpo de la sección)
+// Contexto de soltado dentro de una sección (a partir del gap abierto del cuerpo de la sección)
   const openGap = document.querySelector('.gap.open');
   let sectionContext = null;
   if (openGap && openGap.dataset.sectionId){
     const tSec = sections.find(s=>s.id === openGap.dataset.sectionId);
     if (tSec) sectionContext = { sec: tSec, pos: parseInt(openGap.dataset.sectionPos, 10) };
+  }
+
+  // En modo grid los gaps están ocultos: derivar el contexto a partir de la tarjeta hover
+  if (!sectionContext && pageList.classList.contains('grid-mode')){
+    const hovered = document.querySelector('.pageCard.dropTarget');
+    if (hovered){
+      const hId = hovered.dataset.id;
+      const hSec = sections.find(s=>s.pageIds.includes(hId));
+      if (hSec){
+        const pos = hSec.pageIds.indexOf(hId);
+        sectionContext = { sec: hSec, pos };
+      }
+    }
   }
 
   // Mover una sección entera a otra sección → preguntar antes
@@ -246,14 +269,20 @@ if (currentDrag.origin === 'library' || currentDrag.origin === 'library-multi'){
 } else if (currentDrag.origin === 'canvas'){
    const fromIndex = pages.findIndex(p=>p.id === currentDrag.pageId);
     if (fromIndex === -1) return;
+    // Quitar la página de su sección si se suelta fuera de cualquier sección
+    sections.forEach(s=>{ s.pageIds = s.pageIds.filter(id=>id !== currentDrag.pageId); });
+    sections = sections.filter(sec=>sec.pageIds.length > 0);
     const [moved] = pages.splice(fromIndex, 1);
     let insertAt = targetIndex;
     if (fromIndex < targetIndex) insertAt -= 1;
     pages.splice(insertAt, 0, moved);
-  } else if (currentDrag.origin === 'canvas-multi'){
+} else if (currentDrag.origin === 'canvas-multi'){
     console.log('Procesando drop múltiple:', currentDrag.pageIds);
     const pageIds = Array.isArray(currentDrag.pageIds) ? currentDrag.pageIds : [currentDrag.pageIds];
     const idSet = new Set(pageIds);
+    // Quitar las páginas movidas de sus secciones (si se sueltan fuera de toda sección)
+    sections.forEach(s=>{ s.pageIds = s.pageIds.filter(id=>!idSet.has(id)); });
+    sections = sections.filter(sec=>sec.pageIds.length > 0);
     const existingPages = pages.filter(p => idSet.has(p.id));
     if (existingPages.length !== pageIds.length) {
       console.warn('Algunas páginas no existen:', pageIds.filter(id => !pages.some(p => p.id === id)));
