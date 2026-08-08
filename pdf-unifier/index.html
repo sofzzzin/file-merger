@@ -49,6 +49,14 @@
           <span class="zoomPct" id="zoomPct">100%</span>
         </div>
         <div class="actions">
+          <button class="btn" id="saveBtn" title="Guardar proyecto en tu dispositivo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+            Guardar
+          </button>
+          <button class="btn" id="openBtn" title="Abrir un proyecto guardado">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            Abrir
+          </button>
           <button class="btn" id="selectAllBtn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
             Seleccionar todo
@@ -70,6 +78,7 @@
         </div>
       </div>
       <input type="file" id="addMoreInput" multiple accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg">
+      <input type="file" id="projectFileInput" accept=".json,application/json">
 
       <div id="workspaceBody">
 <div id="libraryPanel">
@@ -260,6 +269,7 @@
   <script src="js/canvas/canvas.js"></script>
   <script src="js/trash/trash.js"></script>
   <script src="js/export/exportPDF.js"></script>
+  <script src="js/project/saveProject.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

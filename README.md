@@ -13,6 +13,7 @@ Aplicación web para unir PDFs e imágenes en un solo archivo PDF directamente d
 - Deshaz/rehaz todas tus acciones con **Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y** (crear o eliminar secciones, mover elementos, renombrar, eliminar, restaurar desde la papelera, etc.).
 - Exporta el resultado final como un PDF unido, o en **lotes** (un PDF por sección en un ZIP).
 - Incluye papelera de reciclaje para recuperar elementos eliminados.
+- **Guardar/Abrir proyecto**: guarda todo tu trabajo (biblioteca, lienzo, secciones, papelera y fuentes) en un archivo `.json` local y reábrelo cuando quieras para seguir editando desde donde lo dejaste.
 
 ## Estructura del proyecto
 
@@ -60,6 +61,8 @@ pdf-unifier/
 │   │   └── history.js
 │   ├── export/
 │   │   └── exportPDF.js
+│   ├── project/
+│   │   └── saveProject.js
 │   └── utils/
 │       ├── helpers.js
 │       ├── ids.js
