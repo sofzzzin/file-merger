@@ -30,12 +30,22 @@ function renderPageList(){
 
 pageList.appendChild(makeGap(0));
   let flatIdx = 0;
+  let secIdx = 0;
   ordered.forEach(entry=>{
     if (entry.type === 'divider'){
+      // Gap para reordenar secciones (antes de la sección). Al soltar un divisor
+      // de sección sobre este gap se reordena el array `sections` (mover arriba/abajo).
+      const sGap = makeGap(flatIdx);
+      sGap.dataset.sectionGap = '1';
+      sGap.dataset.sectionOrder = secIdx;
+      pageList.appendChild(sGap);
+
+      // Agrupar las páginas de la sección en un card con cabecera
       const card = makeCanvasSectionCard(entry.sec);
       pageList.appendChild(card);
-      pageList.appendChild(makeGap(flatIdx + 1));
+      pageList.appendChild(makeGap(flatIdx + entry.sec.pageIds.length));
       flatIdx += entry.sec.pageIds.length;
+      secIdx++;
     } else {
       // Saltar las páginas que ya se renderizaron dentro de su card de sección
       if (placed.has(entry.page.id)) return;

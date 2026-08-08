@@ -27,6 +27,26 @@ if (!currentDrag) return;
 if (pageList.classList.contains('grid-mode')){
     clearDropTargets();
     document.querySelectorAll('.pageCard').forEach(c=>c.classList.remove('drop-left','drop-right'));
+    document.querySelectorAll('.canvasSectionCard').forEach(c=>c.classList.remove('drop-above','drop-below','drag-inside','drag-outside'));
+
+    // Si se arrastra un divisor de sección en modo grid platear arriba/abajo.
+    if (currentDrag.origin === 'canvas-section'){
+      const secCards = Array.from(document.querySelectorAll('.canvasSectionCard'));
+      let nearest = null, closestDist = Infinity;
+      for (const c of secCards){
+        const r = c.getBoundingClientRect();
+        const cx = r.left + r.width/2, cy = r.top + r.height/2;
+        const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+        if (dist < closestDist){ closestDist = dist; nearest = c; }
+      }
+      if (nearest){
+        const r = nearest.getBoundingClientRect();
+        const above = e.clientY < r.top + r.height / 2;
+        nearest.classList.add(above ? 'drop-above' : 'drop-below');
+      }
+      return;
+    }
+
     // Detectar cards de sección también en modo grid
     const gcard = getSectionCardAt(e);
     const inSection = !!gcard;
@@ -73,7 +93,14 @@ if (pageList.classList.contains('grid-mode')){
     document.querySelectorAll('.canvasSectionCard').forEach(c=>c.classList.add('drag-outside'));
   }
 
-  const gaps = Array.from(document.querySelectorAll('.gap'));
+  // Al arrastrar un divisor de sección, priorizar los gaps de sección
+  // (los que permiten reordenar las secciones arriba/abajo).
+  const isSectionDrag = currentDrag.origin === 'canvas-section';
+  const gaps = Array.from(document.querySelectorAll('.gap')).filter(g=>{
+    if (isSectionDrag) return !!g.dataset.sectionGap;
+    // Para el resto de arrastres, excluir los gaps de sección (se reordenan aparte)
+    return !g.dataset.sectionGap;
+  });
   if (!gaps.length) return;
   let closest = null, closestDist = Infinity;
   for (const g of gaps){
@@ -128,6 +155,36 @@ if (!sectionContext && pageList.classList.contains('grid-mode')){
         }
         sectionContext = { sec: tSec, pos };
       }
+    }
+  }
+
+  // ── Reordenar secciones del lienzo (arrastrando el divisor de una sección
+  //     → mover arriba/abajo dentro del array `sections`).
+  // En modo lista: se suelta sobre un gap de sección (data-section-gap).
+  // En modo grid: los gaps están ocultos, se suelta sobre un card de sección
+  // con indicador arriba/abajo (drop-above/drop-below).
+  let sectionTargetOrder = null;
+  if (currentDrag.origin === 'canvas-section'){
+    if (openGap && openGap.dataset.sectionGap){
+      sectionTargetOrder = parseInt(openGap.dataset.sectionOrder, 10);
+    } else if (pageList.classList.contains('grid-mode')){
+      const aboveEl = document.querySelector('.canvasSectionCard.drop-above');
+      const belowEl = document.querySelector('.canvasSectionCard.drop-below');
+      const rel = aboveEl || belowEl;
+      if (rel){
+        const idx = sections.findIndex(s=>s.id === rel.dataset.sectionId);
+        if (idx !== -1){
+          sectionTargetOrder = aboveEl ? idx : idx + 1;
+        }
+      }
+    }
+    if (sectionTargetOrder !== null && !Number.isNaN(sectionTargetOrder)){
+      reorderCanvasSections(currentDrag.sectionId, sectionTargetOrder);
+      showToast('Sección reordenada.');
+      currentDrag = null;
+      closeAllGaps();
+      renderPageList();
+      return;
     }
   }
 

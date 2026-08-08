@@ -72,6 +72,15 @@
 #pageList.grid-mode .canvasSectionCard .canvasSectionBody .pageCard .selectDot{display:flex;opacity:1;}
 #pageList.grid-mode .canvasSectionCard .canvasSectionBody .pageCard .overlay{display:flex;opacity:1;}
 
+/* Indicadores de reordenación de secciones en modo grid:
+   muestran con una barra azul arriba/abajo dónde se insertará la sección. */
+#pageList.grid-mode .canvasSectionCard.drop-above{
+  outline:3px solid var(--blue);outline-offset:3px;border-top:4px solid var(--blue);
+}
+#pageList.grid-mode .canvasSectionCard.drop-below{
+  outline:3px solid var(--blue);outline-offset:3px;border-bottom:4px solid var(--blue);
+}
+
 /* ──────────────────────────────────────────────
    SECCIONES EN LA BIBLIOTECA
    ────────────────────────────────────────────── */

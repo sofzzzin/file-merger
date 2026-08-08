@@ -217,6 +217,25 @@ function startSectionRename(scope, sectionId, nameEl){
 
 // ── Eliminar sección ──────────────────────────────────────────
 
+// ── Reordenar secciones del lienzo (mover arriba/abajo) ──────
+// `targetIndex` es la posición final deseada dentro del array `sections`.
+function reorderCanvasSections(sectionId, targetIndex){
+  const from = sections.findIndex(s => s.id === sectionId);
+  if (from === -1) return;
+  const before = snapshotState();
+
+  const [sec] = sections.splice(from, 1);
+  let t = targetIndex;
+  // Al quitar primero, si la sección estaba antes del objetivo hay que correr el índice
+  if (from < targetIndex) t -= 1;
+  t = Math.max(0, Math.min(t, sections.length));
+  sections.splice(t, 0, sec);
+
+  resequencePages();
+  renderPageList();
+  commitAction('Reordenar sección del lienzo', before);
+}
+
 async function deleteCanvasSection(sectionId){
   const sec = sections.find(s => s.id === sectionId);
   if (!sec) return false;
