@@ -32,6 +32,16 @@
 #pageList.grid-mode .pageCard:hover{border-color:var(--blue);box-shadow:0 10px 22px -10px rgba(61,127,255,0.4);}
 #pageList.grid-mode .pageCard.selected{border-color:var(--blue);}
 #pageList.grid-mode .pageCard.dropTarget{outline-color:var(--blue);}
+/* Indicador izquierda/derecha al reordenar en modo grid:
+   se muestra como una barra azul en el borde exterior de la card (izquierda o derecha)
+   para que el reordenamiento se vea FUERA de la tarjeta, no dentro. */
+#pageList.grid-mode .pageCard.dropTarget{outline:3px solid var(--blue);outline-offset:3px;}
+#pageList.grid-mode .pageCard.dropTarget.drop-left{
+  border-left:4px solid var(--blue);border-right:2px solid transparent;
+}
+#pageList.grid-mode .pageCard.dropTarget.drop-right{
+  border-right:4px solid var(--blue);border-left:2px solid transparent;
+}
 #pageList.grid-mode .pageCard .selectDot{opacity:1;top:8px;left:8px;width:22px;height:22px;}
 #pageList.grid-mode .pageCard .overlay{opacity:1;top:0;right:0;padding:6px;display:flex;}
 #pageList.grid-mode .pageCard .overlay .iconBtn{width:24px;height:24px;}

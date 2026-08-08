@@ -7,6 +7,13 @@ function getSectionCardAt(e){
   });
 }
 
+// Devuelve true si el puntero está sobre la mitad IZQUIERDA de la tarjeta dada
+function isPointerLeftHalf(e, el){
+  if (!el) return true;
+  const r = el.getBoundingClientRect();
+  return e.clientX < r.left + r.width / 2;
+}
+
 canvasArea.addEventListener('dragover', e=>{
 if (!currentDrag) return;
   e.preventDefault();
@@ -19,6 +26,7 @@ if (!currentDrag) return;
 
 if (pageList.classList.contains('grid-mode')){
     clearDropTargets();
+    document.querySelectorAll('.pageCard').forEach(c=>c.classList.remove('drop-left','drop-right'));
     // Detectar cards de sección también en modo grid
     const gcard = getSectionCardAt(e);
     if (gcard){
@@ -30,7 +38,11 @@ if (pageList.classList.contains('grid-mode')){
       document.querySelectorAll('.canvasSectionCard').forEach(c=>c.classList.add('drag-outside'));
     }
     const nearest = findNearestCard(e);
-    if (nearest) nearest.classList.add('dropTarget');
+    if (nearest){
+      nearest.classList.add('dropTarget');
+      // Indicar si se inserta a la izquierda o derecha según la mitad del puntero
+      nearest.classList.add(isPointerLeftHalf(e, nearest) ? 'drop-left' : 'drop-right');
+    }
     return;
   }
 
@@ -83,7 +95,7 @@ canvasArea.addEventListener('drop', async e=>{
   // En modo grid los gaps están ocultos: derivar el contexto según la posición del cursor.
   // Si el puntero está dentro de un card de sección → se suelta dentro de esa sección.
   // Si NO está dentro de ninguna sección → se suelta como página suelta del lienzo.
-  if (!sectionContext && pageList.classList.contains('grid-mode')){
+if (!sectionContext && pageList.classList.contains('grid-mode')){
     const sCard = getSectionCardAt(e);
     if (sCard){
       const tSec = sections.find(s=>s.id === sCard.dataset.sectionId);
@@ -92,7 +104,11 @@ canvasArea.addEventListener('drop', async e=>{
         let pos = tSec.pageIds.length; // por defecto, al final de la sección
         if (hovered){
           const hId = hovered.dataset.id;
-          if (tSec.pageIds.includes(hId)) pos = tSec.pageIds.indexOf(hId);
+          if (tSec.pageIds.includes(hId)){
+            pos = tSec.pageIds.indexOf(hId);
+            // Si el puntero está en la mitad derecha de la tarjeta → insertar DESPUÉS de ella
+            if (!isPointerLeftHalf(e, hovered)) pos += 1;
+          }
         }
         sectionContext = { sec: tSec, pos };
       }
@@ -205,13 +221,15 @@ canvasArea.addEventListener('drop', async e=>{
   }
 
   // ── Soltado general (fuera de secciones) ──
-  let targetIndex;
+let targetIndex;
   if (pageList.classList.contains('grid-mode')){
     const hovered = document.querySelector('.pageCard.dropTarget');
     clearDropTargets();
     if (hovered){
       const hi = pages.findIndex(p=>p.id === hovered.dataset.id);
       targetIndex = hi === -1 ? pages.length : hi;
+      // Si el puntero está en la mitad derecha de la tarjeta → insertar DESPUÉS de ella
+      if (!isPointerLeftHalf(e, hovered)) targetIndex += 1;
     } else {
       targetIndex = pages.length;
     }

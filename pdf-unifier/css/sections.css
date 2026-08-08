@@ -56,7 +56,7 @@
 .canvasSectionCard .canvasSectionBody .pageCard{margin:10px 0;width:100%;box-sizing:border-box;}
 .canvasSectionCard.collapsed .canvasSectionBody{display:none;}
 .canvasSectionCard.drag-inside{border-color:var(--blue);box-shadow:0 0 0 3px rgba(61,127,255,0.25), 0 16px 34px -16px rgba(28,42,69,0.22);}
-.canvasSectionCard.drag-outside{border-color:var(--danger);opacity:.75;}
+.canvasSectionCard.drag-outside{opacity:.5;}
 
 /* ── Modo grid: el card de sección abarca todo el ancho de la cuadrícula ── */
 #pageList.grid-mode .canvasSectionCard{
