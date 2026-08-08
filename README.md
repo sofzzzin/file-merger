@@ -9,7 +9,7 @@ Aplicación web para unir PDFs e imágenes en un solo archivo PDF directamente d
 - Agrega archivos a una biblioteca y arrástralos al lienzo.
 - Reordena páginas por arrastre.
 - Selecciona múltiples páginas y envía o elimina en bloque.
-- Exporta el resultado final como un PDF.
+- Exporta el resultado final como un PDF unido, o en **lotes** (un PDF por sección en un ZIP).
 - Incluye papelera de reciclaje para recuperar elementos eliminados.
 
 ## Estructura del proyecto
@@ -102,8 +102,10 @@ http://localhost:4173/
 - Los archivos nunca se envían a un servidor.
 - No se requiere conexión a internet para utilizar la aplicación una vez abiertos los archivos del proyecto.
 - La exportación del documento se realiza mediante PDF-lib.
+- La descarga en lotes empaca los PDFs en un ZIP mediante JSZip.
   
 ## Créditos
 
 - PDF.js
 - PDF-lib
+- JSZip

@@ -23,3 +23,18 @@
 .trashRow .purgeBtn{background:var(--danger-soft);color:var(--danger);}
 .trashRow .purgeBtn:hover{background:var(--danger);color:#fff;}
 #trashEmpty{color:var(--muted);font-size:13px;text-align:center;padding:30px 0;}
+
+/* ── Modal de exportación ── */
+.exportChoices{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
+.exportChoice{
+  display:flex;align-items:center;gap:12px;width:100%;
+  text-align:left;padding:13px 14px;border-radius:12px;
+  background:var(--panel-2);border:1.5px solid var(--border);
+  color:var(--ink);cursor:pointer;
+  transition:background .15s ease, border-color .15s ease, transform .12s ease;
+}
+.exportChoice:hover{background:var(--blue-soft);border-color:var(--blue);transform:translateY(-1px);}
+.exportChoice svg{width:22px;height:22px;flex:0 0 auto;color:var(--blue-dark);}
+.exportChoice span{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.exportChoice strong{font-size:14px;font-weight:700;color:var(--ink);}
+.exportChoice small{font-size:12px;color:var(--muted);line-height:1.4;}

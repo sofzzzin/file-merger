@@ -7,6 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <link rel="stylesheet" href="css/variables.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/upload.css">
@@ -190,6 +191,32 @@
         <div class="modalActions">
           <button class="btn" id="sectionKeepNoBtn">No, solo las páginas</button>
           <button class="btn primary" id="sectionKeepYesBtn">Sí, mantener sección</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modalOverlay" id="exportModal">
+      <div class="modalCard">
+        <h3>¿Cómo deseas exportar?</h3>
+        <div class="modalMsg">Selecciona el formato de descarga:</div>
+        <div class="exportChoices">
+          <button class="btn exportChoice" id="exportUnifiedBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+            <span>
+              <strong>PDF unido</strong>
+              <small>Un solo PDF con todas las páginas</small>
+            </span>
+          </button>
+          <button class="btn exportChoice" id="exportBatchBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M13 3v6h6"/></svg>
+            <span>
+              <strong>Descargar por lotes</strong>
+              <small>Un PDF por sección en un ZIP</small>
+            </span>
+          </button>
+        </div>
+        <div class="modalActions">
+          <button class="btn" id="exportCancelBtn">Cancelar</button>
         </div>
       </div>
     </div>
