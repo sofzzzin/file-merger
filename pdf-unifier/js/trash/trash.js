@@ -49,6 +49,7 @@ function renderTrashPanel(){
 function restoreFromTrash(entryId){
   const entry = trash.find(t=>t.id === entryId);
   if (!entry) return;
+  const before = snapshotState();
   trash = trash.filter(t=>t.id !== entryId);
   if (entry.kind === 'canvas-page'){
     pages.push(entry.data);
@@ -61,6 +62,7 @@ function restoreFromTrash(entryId){
   updateTrashBadge();
   renderTrashPanel();
   showToast('Elemento restaurado.');
+  commitAction('Restaurar elemento de la papelera', before);
 }
 trashBtn.addEventListener('click', ()=>{
   renderTrashPanel();

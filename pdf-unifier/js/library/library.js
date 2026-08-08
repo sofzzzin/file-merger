@@ -82,7 +82,8 @@ libDeleteSelectedBtn.addEventListener('click', async ()=>{
     '¿Seguro que quieres eliminar ' + n + (n===1 ? ' elemento' : ' elementos') +
     ' de la biblioteca? Podrás recuperarlo' + (n===1?'':'s') + ' desde la papelera de reciclaje.'
   );
-  if (!ok) return;
+if (!ok) return;
+  const before = snapshotState();
 const idSet = new Set(selectedLibIds);
   const removed = libraryOrder.filter(id=>idSet.has(id));
   removed.forEach(libId=>{
@@ -99,6 +100,7 @@ const idSet = new Set(selectedLibIds);
   librarySections = librarySections.filter(sec=>sec.libIds.length > 0);
   selectedLibIds.clear();
   updateLibSelectionUI();
-  renderLibrary();
+renderLibrary();
   showToast(n === 1 ? 'Elemento movido a la papelera.' : n + ' elementos movidos a la papelera.');
+  commitAction('Eliminar elementos de la biblioteca', before);
 });

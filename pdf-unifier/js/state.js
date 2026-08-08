@@ -1,7 +1,7 @@
 pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
 const sources = {};
-const libraryItemsMap = {};
+let libraryItemsMap = {};
 let libraryOrder = [];
 let libPageCounter = 0;
 let pages = [];
@@ -19,8 +19,6 @@ let sections = [];            // Secciones del lienzo: { id, name, pageIds: [] }
 let librarySections = [];     // Secciones de biblioteca: { id, name, libIds: [] }
 let sectionCounter = 0;       // Contador para secciones del lienzo (secN)
 let libSectionCounter = 0;    // Contador para secciones de biblioteca (libsecN)
-let undoState = null;         // { scope:'canvas'|'library', sectionId, created }
-let undoTimeout = null;       // Temporizador de 20s para deshacer
 
 const dropScreen = document.getElementById('dropScreen');
 const dropZone = document.getElementById('dropZone');

@@ -6,10 +6,13 @@ function startRename(item, nameEl){
   nameEl.replaceWith(input);
   input.focus();
   input.select();
-  function commit(){
+function commit(){
     const v = input.value.trim();
+    if (!v || v === item.name) return;
+    const before = snapshotState();
     item.name = v || item.name;
     renderLibrary();
+    commitAction('Renombrar elemento de la biblioteca', before);
   }
   input.addEventListener('blur', commit);
   input.addEventListener('keydown', e=>{

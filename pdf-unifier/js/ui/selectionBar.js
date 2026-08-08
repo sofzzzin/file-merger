@@ -27,6 +27,7 @@ deleteSelectedBtn.addEventListener('click', async ()=>{
     ' del lienzo? Podrás recuperarla' + (n===1?'':'s') + ' desde la papelera de reciclaje.'
   );
   if (!ok) return;
+const before = snapshotState();
 const idSet = new Set(selectedIds);
   const removed = pages.filter(p=>idSet.has(p.id));
   pages = pages.filter(p=>!idSet.has(p.id));
@@ -40,4 +41,5 @@ const idSet = new Set(selectedIds);
   updateSelectionUI();
   renderPageList();
   showToast(n === 1 ? 'Página movida a la papelera.' : n + ' páginas movidas a la papelera.');
+  commitAction('Eliminar páginas del lienzo', before);
 });

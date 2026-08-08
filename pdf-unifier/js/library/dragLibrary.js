@@ -126,6 +126,7 @@ libraryList.addEventListener('drop', async e=>{
 
   const isLibItemDrag = ['library','library-multi'].includes(currentDrag.origin);
   const isLibSectionDrag = ['library-section','library-section-multi'].includes(currentDrag.origin);
+  const libDropBefore = snapshotState();
 
   // Mover ítem(s) de biblioteca a la sección objetivo
   if (isLibItemDrag){
@@ -151,6 +152,7 @@ libraryList.addEventListener('drop', async e=>{
     currentDrag = null;
     renderLibrary();
     showToast('Elemento(s) movido(s) a la sección "' + targetSec.name + '".');
+    commitAction('Mover elementos entre secciones de biblioteca', libDropBefore);
     return;
   }
 
@@ -170,6 +172,7 @@ libraryList.addEventListener('drop', async e=>{
         });
         librarySections = librarySections.filter(sec=>!srcSecs.some(s=>s.id===sec.id));
         showToast('Sección "' + srcSec.name + '" movida a "' + targetSec.name + '".');
+        commitAction('Mover sección de biblioteca', libDropBefore);
       }
     }
     if (currentDrag.origin === 'library-section-multi'){
@@ -224,6 +227,8 @@ function movePagesToLibrary(pageIds, groupAsSection){
     return;
   }
   
+  const dropBefore = snapshotState();
+  
 // Guardar los IDs de las páginas que se van a mover
   const pageIdsToRemove = new Set(moving.map(p => p.id));
   
@@ -263,7 +268,6 @@ function movePagesToLibrary(pageIds, groupAsSection){
       name: getNextLibSectionName(),
       libIds: newLibIds
     });
-    armUndo('library', librarySections[librarySections.length-1].id);
   }
   
   // Limpiar selección SOLO si estamos moviendo desde canvas
@@ -274,8 +278,9 @@ function movePagesToLibrary(pageIds, groupAsSection){
   
   const count = moving.length;
   if (groupAsSection && newLibIds.length > 1){
-    showToast('Sección creada en la biblioteca. Puedes deshacerla con Ctrl+Z durante 20 segundos.');
+    showToast('Sección creada en la biblioteca.');
   } else {
     showToast(count === 1 ? 'Página enviada a la biblioteca.' : count + ' páginas enviadas a la biblioteca.');
   }
+  commitAction('Mover páginas a la biblioteca', dropBefore);
 }

@@ -104,59 +104,10 @@ function buildPagesFromLibSection(sec){
   return result;
 }
 
-// ── Deshacer (Ctrl+Z) con ventana de 20 segundos ────────────
-
-function armUndo(scope, sectionId){
-  undoState = { scope, sectionId, created: Date.now() };
-  clearTimeout(undoTimeout);
-  undoTimeout = setTimeout(()=>{
-    undoState = null;
-  }, 20000);
-}
-
-function clearUndo(){
-  undoState = null;
-  clearTimeout(undoTimeout);
-}
-
-function undoLastSectionCreation(){
-  if (!undoState) return false;
-  const { scope, sectionId } = undoState;
-  clearUndo();
-
-  if (scope === 'canvas'){
-    const sec = sections.find(s => s.id === sectionId);
-    if (!sec) return false;
-    // Desagrupar: solo se elimina la sección, las páginas permanecen sueltas
-    sections = sections.filter(s => s.id !== sectionId);
-    renderPageList();
-    showToast('Se ha deshecho la creación de la sección en el lienzo.');
-    return true;
-  }
-
-  if (scope === 'library'){
-    const sec = librarySections.find(s => s.id === sectionId);
-    if (!sec) return false;
-    // Desagrupar: los ítems vuelven a quedar sueltos en la biblioteca
-    librarySections = librarySections.filter(s => s.id !== sectionId);
-    renderLibrary();
-    showToast('Se ha deshecho la creación de la sección en la biblioteca.');
-    return true;
-  }
-
-  return false;
-}
-
-document.addEventListener('keydown', e=>{
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z'){
-    e.preventDefault();
-    undoLastSectionCreation();
-  }
-});
-
 // ── Crear sección en el lienzo ───────────────────────────────
 
 function createCanvasSection(pageIds){
+  const before = snapshotState();
   const ids = Array.isArray(pageIds) ? pageIds.filter(id => pages.some(p => p.id === id)) : [];
   if (!ids.length) return;
 
@@ -166,9 +117,9 @@ function createCanvasSection(pageIds){
     pageIds: ids
   };
   sections.push(sec);
-  armUndo('canvas', sec.id);
   renderPageList();
-  showToast('Sección creada en el lienzo. Puedes deshacerla con Ctrl+Z durante 20 segundos.');
+  showToast('Sección creada en el lienzo.');
+  commitAction('Crear sección en el lienzo', before);
 }
 
 // Opción contextual: agrupar las páginas seleccionadas del lienzo
@@ -187,6 +138,7 @@ document.addEventListener('click', e=>{
 // ── Crear sección en la biblioteca ─────────────────────────────
 
 function createLibrarySection(libIds){
+  const before = snapshotState();
   const ids = Array.isArray(libIds)
     ? libIds.filter(id => libraryItemsMap[id] && libraryItemsMap[id].status === 'ready')
     : [];
@@ -203,9 +155,9 @@ function createLibrarySection(libIds){
     libIds: ids
   };
   librarySections.push(sec);
-  armUndo('library', sec.id);
   renderLibrary();
-  showToast('Sección creada en la biblioteca. Puedes deshacerla con Ctrl+Z durante 20 segundos.');
+  showToast('Sección creada en la biblioteca.');
+  commitAction('Crear sección en la biblioteca', before);
 }
 
 document.addEventListener('click', e=>{
@@ -238,14 +190,22 @@ function startSectionRename(scope, sectionId, nameEl){
 
   function commit(){
     const v = input.value.trim();
+    if (!v || v === name){
+      if (scope === 'canvas') renderPageList();
+      else renderLibrary();
+      return;
+    }
+    const before = snapshotState();
     if (scope === 'canvas'){
       const sec = sections.find(s => s.id === sectionId);
       if (sec) sec.name = v || sec.name;
       renderPageList();
+      commitAction('Renombrar sección del lienzo', before);
     } else {
       const sec = librarySections.find(s => s.id === sectionId);
       if (sec) sec.name = v || sec.name;
       renderLibrary();
+      commitAction('Renombrar sección de la biblioteca', before);
     }
   }
   input.addEventListener('blur', commit);
@@ -262,9 +222,11 @@ async function deleteCanvasSection(sectionId){
   if (!sec) return false;
   const ok = await confirmDialog('¿Mover la sección "' + sec.name + '" (' + sec.pageIds.length + ' página(s)) a la papelera?');
   if (!ok) return false;
+  const before = snapshotState();
   sections = sections.filter(s => s.id !== sectionId);
   renderPageList();
   showToast('Sección enviada a la papelera.');
+  commitAction('Eliminar sección del lienzo', before);
   return true;
 }
 
@@ -273,9 +235,11 @@ async function deleteLibrarySection(sectionId){
   if (!sec) return false;
   const ok = await confirmDialog('¿Mover la sección "' + sec.name + '" (' + sec.libIds.length + ' elemento(s)) a la papelera?');
   if (!ok) return false;
+  const before = snapshotState();
   librarySections = librarySections.filter(s => s.id !== sectionId);
   renderLibrary();
   showToast('Sección enviada a la papelera.');
+  commitAction('Eliminar sección de la biblioteca', before);
   return true;
 }
 

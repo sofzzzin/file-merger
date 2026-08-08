@@ -94,6 +94,7 @@ canvasArea.addEventListener('drop', async e=>{
   e.preventDefault();
   canvasArea.classList.remove('dropready');
   if (!currentDrag) return;
+  const dropBefore = snapshotState();
 
   // ── Detectar suelta DENTRO de una sección del lienzo ──
   const sectionCardAt = getSectionCardAt(e);
@@ -143,6 +144,7 @@ if (!sectionContext && pageList.classList.contains('grid-mode')){
         sections = sections.filter(sec=>sec.id !== srcSec.id);
         resequencePages();
         showToast('Sección "' + srcSec.name + '" movida a "' + targetSec.name + '".');
+        commitAction('Mover sección dentro del lienzo', dropBefore);
       }
       currentDrag = null;
       renderPageList();
@@ -166,11 +168,12 @@ if (!sectionContext && pageList.classList.contains('grid-mode')){
       }
       sections = sections.filter(sec=>sec.pageIds.length > 0);
       targetSec.pageIds.splice(Math.min(pos, targetSec.pageIds.length), 0, currentDrag.pageId);
-      resequencePages();
+resequencePages();
       selectedIds.clear();
       updateSelectionUI();
       currentDrag = null;
       renderPageList();
+      commitAction('Mover página dentro de sección', dropBefore);
       return;
     }
 
@@ -182,11 +185,12 @@ if (!sectionContext && pageList.classList.contains('grid-mode')){
       sections.forEach(s=>{ s.pageIds = s.pageIds.filter(id=>!idSet.has(id)); });
       sections = sections.filter(sec=>sec.pageIds.length > 0);
       targetSec.pageIds.splice(Math.min(pos, targetSec.pageIds.length), 0, ...Array.from(idSet));
-      resequencePages();
+resequencePages();
       selectedIds.clear();
       updateSelectionUI();
       currentDrag = null;
       renderPageList();
+      commitAction('Mover páginas dentro de sección', dropBefore);
       return;
     }
 
@@ -305,6 +309,7 @@ if (currentDrag.origin === 'library' || currentDrag.origin === 'library-multi'){
       selectedLibIds.clear();
       updateLibSelectionUI();
     }
+    commitAction('Agregar elementos de biblioteca al lienzo', dropBefore);
 } else if (currentDrag.origin === 'canvas'){
    const fromIndex = pages.findIndex(p=>p.id === currentDrag.pageId);
     if (fromIndex === -1) return;
@@ -315,6 +320,7 @@ if (currentDrag.origin === 'library' || currentDrag.origin === 'library-multi'){
     let insertAt = targetIndex;
     if (fromIndex < targetIndex) insertAt -= 1;
     pages.splice(insertAt, 0, moved);
+    commitAction('Mover página en el lienzo', dropBefore);
 } else if (currentDrag.origin === 'canvas-multi'){
     console.log('Procesando drop múltiple:', currentDrag.pageIds);
     const pageIds = Array.isArray(currentDrag.pageIds) ? currentDrag.pageIds : [currentDrag.pageIds];
@@ -355,6 +361,7 @@ if (currentDrag.origin === 'library' || currentDrag.origin === 'library-multi'){
       pages = remaining;
     }
 selectedIds.clear();
+    commitAction('Mover páginas en el lienzo', dropBefore);
 } else if (currentDrag.origin === 'library-section' || currentDrag.origin === 'library-section-multi'){
     // Arrastrar una o varias secciones de biblioteca al lienzo
     const isMulti = currentDrag.origin === 'library-section-multi';
@@ -381,14 +388,15 @@ selectedIds.clear();
         name: secs.length === 1 ? secs[0].name : getNextCanvasSectionName(),
         pageIds
       };
-      sections.push(sec);
-      armUndo('canvas', sec.id);
+sections.push(sec);
       pages.splice(targetIndex, 0, ...newPages);
-      showToast('Sección creada en el lienzo. Puedes deshacerla con Ctrl+Z durante 20 segundos.');
+      showToast('Sección creada en el lienzo.');
+      commitAction('Agregar sección de biblioteca al lienzo', dropBefore);
     } else {
       // Solo insertar las páginas sueltas
       pages.splice(targetIndex, 0, ...newPages);
       showToast('Páginas agregadas al lienzo.');
+      commitAction('Agregar páginas al lienzo', dropBefore);
     }
 
     if (isMulti){
@@ -405,6 +413,7 @@ selectedIds.clear();
     const remaining = pages.filter(p=>!secPageIds.has(p.id));
     remaining.splice(targetIndex, 0, ...movedItems);
     pages = remaining;
+    commitAction('Mover sección en el lienzo', dropBefore);
   }
 
   currentDrag = null;
