@@ -430,6 +430,8 @@ const label = document.createElement('div');
 }
 
 // Crea el card de sección en el lienzo (header + páginas)
+// Ahora renderiza gaps de inserción entre las páginas de la sección
+// para permitir reordenarlas dentro de la propia sección.
 function makeCanvasSectionCard(sec){
   const card = document.createElement('div');
   card.className = 'canvasSectionCard';
@@ -440,13 +442,27 @@ function makeCanvasSectionCard(sec){
 
   const body = document.createElement('div');
   body.className = 'canvasSectionBody';
-  sec.pageIds.forEach(pId=>{
+
+  sec.pageIds.forEach((pId, secIdx)=>{
     const p = pages.find(x=>x.id === pId);
     if (p){
+      // Gap de inserción ANTES de esta página (posición = secIdx dentro de la sección)
+      const gap = makeGap(secIdx);
+      gap.dataset.sectionId = sec.id;
+      gap.dataset.sectionPos = secIdx;
+      body.appendChild(gap);
+
       const idx = pages.findIndex(x=>x.id === pId);
       body.appendChild(makeCard(p, idx));
     }
   });
+
+  // Gap final al final de la sección (posición = cantidad de páginas)
+  const endGap = makeGap(sec.pageIds.length);
+  endGap.dataset.sectionId = sec.id;
+  endGap.dataset.sectionPos = sec.pageIds.length;
+  body.appendChild(endGap);
+
   card.appendChild(body);
 
   return card;

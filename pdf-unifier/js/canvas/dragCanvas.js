@@ -62,56 +62,120 @@ canvasArea.addEventListener('drop', async e=>{
   const sectionCardAt = getSectionCardAt(e);
   document.querySelectorAll('.canvasSectionCard').forEach(c=>c.classList.remove('drag-inside','drag-outside'));
 
-  if (sectionCardAt){
-    if (currentDrag.origin === 'canvas' || currentDrag.origin === 'canvas-multi'){
-      // Mover página(s) del lienzo a otra sección
-      let moveIds = currentDrag.origin === 'canvas-multi'
-        ? (Array.isArray(currentDrag.pageIds) ? currentDrag.pageIds : [currentDrag.pageIds])
-        : [currentDrag.pageId];
-      const idSet = new Set(moveIds);
-      const targetSec = sections.find(s=>s.id === sectionCardAt.dataset.sectionId);
-      const srcSec = sections.find(s=> s.pageIds.some(id=>idSet.has(id)) && s.id !== (targetSec ? targetSec.id : null));
-      if (targetSec){
-        // Quitar de la sección origen (si era una sección distinta)
-        if (srcSec){
-          srcSec.pageIds = srcSec.pageIds.filter(id=>!idSet.has(id));
-        }
-        // Añadir al final de la sección objetivo
-        moveIds.forEach(id=>{
+  // Contexto de soltado dentro de una sección (a partir del gap abierto del cuerpo de la sección)
+  const openGap = document.querySelector('.gap.open');
+  let sectionContext = null;
+  if (openGap && openGap.dataset.sectionId){
+    const tSec = sections.find(s=>s.id === openGap.dataset.sectionId);
+    if (tSec) sectionContext = { sec: tSec, pos: parseInt(openGap.dataset.sectionPos, 10) };
+  }
+
+  // Mover una sección entera a otra sección → preguntar antes
+  if (sectionCardAt && !sectionContext && currentDrag.origin === 'canvas-section'){
+    const srcSec = sections.find(s=>s.id === currentDrag.sectionId);
+    const targetSec = sections.find(s=>s.id === sectionCardAt.dataset.sectionId);
+    if (srcSec && targetSec && srcSec.id !== targetSec.id){
+      const ok = await confirmDialog('¿Mover la sección "' + srcSec.name + '" a la sección "' + targetSec.name + '"?');
+      if (ok){
+        srcSec.pageIds.forEach(id=>{
           if (!targetSec.pageIds.includes(id)) targetSec.pageIds.push(id);
         });
-        sections = sections.filter(sec=>sec.pageIds.length > 0);
+        sections = sections.filter(sec=>sec.id !== srcSec.id);
         resequencePages();
-        selectedIds.clear();
-        updateSelectionUI();
-        currentDrag = null;
-        renderPageList();
-        return;
+        showToast('Sección "' + srcSec.name + '" movida a "' + targetSec.name + '".');
       }
-    }
-
-    if (currentDrag.origin === 'canvas-section'){
-      // Mover una sección entera a otra sección → preguntar antes
-      const srcSec = sections.find(s=>s.id === currentDrag.sectionId);
-      const targetSec = sections.find(s=>s.id === sectionCardAt.dataset.sectionId);
-      if (srcSec && targetSec && srcSec.id !== targetSec.id){
-        const ok = await confirmDialog('¿Mover la sección "' + srcSec.name + '" a la sección "' + targetSec.name + '"?');
-        if (ok){
-          // Fusionar: todos los ítems del origen pasan al destino
-          srcSec.pageIds.forEach(id=>{
-            if (!targetSec.pageIds.includes(id)) targetSec.pageIds.push(id);
-          });
-          sections = sections.filter(sec=>sec.id !== srcSec.id);
-          resequencePages();
-          showToast('Sección "' + srcSec.name + '" movida a "' + targetSec.name + '".');
-        }
-        currentDrag = null;
-        renderPageList();
-        return;
-      }
+      currentDrag = null;
+      renderPageList();
+      return;
     }
   }
 
+  // ── Soltado DENTRO de una sección: reordenar a una posición específica ──
+  if (sectionContext){
+    const targetSec = sectionContext.sec;
+    let pos = sectionContext.pos;
+
+    if (currentDrag.origin === 'canvas'){
+      // Mover una página (dentro de la misma sección o desde otra/páginas sueltas)
+      if (!pages.some(p=>p.id === currentDrag.pageId)) return;
+      const srcSec = sections.find(s=>s.pageIds.includes(currentDrag.pageId));
+      if (srcSec){
+        const oldIdx = srcSec.pageIds.indexOf(currentDrag.pageId);
+        srcSec.pageIds = srcSec.pageIds.filter(id=>id !== currentDrag.pageId);
+        if (srcSec.id === targetSec.id && oldIdx < pos) pos -= 1;
+      }
+      sections = sections.filter(sec=>sec.pageIds.length > 0);
+      targetSec.pageIds.splice(Math.min(pos, targetSec.pageIds.length), 0, currentDrag.pageId);
+      resequencePages();
+      selectedIds.clear();
+      updateSelectionUI();
+      currentDrag = null;
+      renderPageList();
+      return;
+    }
+
+    if (currentDrag.origin === 'canvas-multi'){
+      const ids = Array.isArray(currentDrag.pageIds) ? currentDrag.pageIds : [currentDrag.pageIds];
+      const idSet = new Set(ids.filter(id=>pages.some(p=>p.id===id)));
+      if (!idSet.size) return;
+      // Quitar de todas las secciones
+      sections.forEach(s=>{ s.pageIds = s.pageIds.filter(id=>!idSet.has(id)); });
+      sections = sections.filter(sec=>sec.pageIds.length > 0);
+      targetSec.pageIds.splice(Math.min(pos, targetSec.pageIds.length), 0, ...Array.from(idSet));
+      resequencePages();
+      selectedIds.clear();
+      updateSelectionUI();
+      currentDrag = null;
+      renderPageList();
+      return;
+    }
+
+    if (currentDrag.origin === 'library' || currentDrag.origin === 'library-multi'){
+      const libIds = currentDrag.origin === 'library-multi'
+        ? (Array.isArray(currentDrag.libIds) ? currentDrag.libIds : [currentDrag.libIds])
+        : [currentDrag.libId];
+      let newItems = [];
+      libIds.forEach(libId=>{
+        const item = libraryItemsMap[libId];
+        if (!item) return;
+        if (item.kind === 'file'){
+          if (item.type === 'pdf'){
+            const src = sources[item.sourceId];
+            if (src && src.pageThumbs){
+              src.pageThumbs.forEach((pt, i)=>{
+                newItems.push({
+                  id: 'p' + (idCounter++), sourceId: item.sourceId, type:'pdf',
+                  pageIndex: i, thumb: pt.thumb, label: item.name, w: pt.w, h: pt.h
+                });
+              });
+            }
+          } else {
+            const src = sources[item.sourceId];
+            newItems.push({
+              id: 'p' + (idCounter++), sourceId: item.sourceId, type:'image',
+              thumb: src.dataUrl, label: item.name, w: src.w, h: src.h
+            });
+          }
+        } else {
+          newItems.push({
+            id: 'p' + (idCounter++), sourceId: item.sourceId, type: item.type,
+            pageIndex: item.pageIndex, thumb: item.thumb, label: item.name, w: item.w, h: item.h
+          });
+        }
+      });
+      if (!newItems.length) return;
+      pages.push(...newItems);
+      const newIds = newItems.map(p=>p.id);
+      targetSec.pageIds.splice(Math.min(pos, targetSec.pageIds.length), 0, ...newIds);
+      resequencePages();
+      if (currentDrag.origin === 'library-multi'){ selectedLibIds.clear(); updateLibSelectionUI(); }
+      currentDrag = null;
+      renderPageList();
+      return;
+    }
+  }
+
+  // ── Soltado general (fuera de secciones) ──
   let targetIndex;
   if (pageList.classList.contains('grid-mode')){
     const hovered = document.querySelector('.pageCard.dropTarget');
@@ -123,7 +187,6 @@ canvasArea.addEventListener('drop', async e=>{
       targetIndex = pages.length;
     }
   } else {
-    const openGap = document.querySelector('.gap.open');
     targetIndex = openGap ? parseInt(openGap.dataset.index, 10) : pages.length;
     closeAllGaps();
   }

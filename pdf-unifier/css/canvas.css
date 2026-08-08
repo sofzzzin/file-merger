@@ -7,6 +7,7 @@
 }
 #pageList.grid-mode .gap{display:none;}
 .gap{height:0;width:calc(min(560px,88vw) * var(--zoom, 1));transition:height .16s ease, width .15s ease;position:relative;}
+.canvasSectionBody .gap{width:100%;}
 .gap.open{height:34px;}
 .gap .caret{
   position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(0);
