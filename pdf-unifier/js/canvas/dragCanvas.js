@@ -27,22 +27,28 @@ if (!currentDrag) return;
 if (pageList.classList.contains('grid-mode')){
     clearDropTargets();
     document.querySelectorAll('.pageCard').forEach(c=>c.classList.remove('drop-left','drop-right'));
-    document.querySelectorAll('.canvasSectionCard').forEach(c=>c.classList.remove('drop-above','drop-below','drag-inside','drag-outside'));
+document.querySelectorAll('.canvasSectionCard').forEach(c=>c.classList.remove('drop-above','drop-below','drag-inside','drag-outside','drag-merge'));
 
-    // Si se arrastra un divisor de sección en modo grid platear arriba/abajo.
+    // Si se arrastra un divisor de sección en modo grid:
+    // - sobre la cabecera (.sectionDivider) → reordenar arriba/abajo (flecha gris)
+    // - sobre el cuerpo (.canvasSectionBody) → unir la sección en esa sección
     if (currentDrag.origin === 'canvas-section'){
-      const secCards = Array.from(document.querySelectorAll('.canvasSectionCard'));
-      let nearest = null, closestDist = Infinity;
-      for (const c of secCards){
-        const r = c.getBoundingClientRect();
-        const cx = r.left + r.width/2, cy = r.top + r.height/2;
-        const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
-        if (dist < closestDist){ closestDist = dist; nearest = c; }
-      }
-      if (nearest){
-        const r = nearest.getBoundingClientRect();
-        const above = e.clientY < r.top + r.height / 2;
-        nearest.classList.add(above ? 'drop-above' : 'drop-below');
+      const headerEl = e.target.closest('.sectionDivider');
+      const bodyEl = e.target.closest('.canvasSectionBody');
+      if (headerEl || bodyEl){
+        const card = headerEl ? headerEl.closest('.canvasSectionCard') : bodyEl.closest('.canvasSectionCard');
+        if (card){
+          const r = card.getBoundingClientRect();
+          // Zona de reordenación: cabecera de la sección (usar toda su altura)
+          if (headerEl){
+            const hr = headerEl.getBoundingClientRect();
+            const above = e.clientY < hr.top + hr.height / 2;
+            card.classList.add(above ? 'drop-above' : 'drop-below');
+          } else {
+            // Zona de unión: cuerpo de la sección
+            card.classList.add('drag-merge');
+          }
+        }
       }
       return;
     }
@@ -123,9 +129,13 @@ canvasArea.addEventListener('drop', async e=>{
   if (!currentDrag) return;
   const dropBefore = snapshotState();
 
-  // ── Detectar suelta DENTRO de una sección del lienzo ──
+// ── Detectar suelta DENTRO de una sección del lienzo ──
+  // Capturar los indicadores ANTES de limpiarlos (para poder decidir la intención)
+  const dropAboveCard = document.querySelector('.canvasSectionCard.drop-above');
+  const dropBelowCard = document.querySelector('.canvasSectionCard.drop-below');
+  const dragMergeCard = document.querySelector('.canvasSectionCard.drag-merge');
   const sectionCardAt = getSectionCardAt(e);
-  document.querySelectorAll('.canvasSectionCard').forEach(c=>c.classList.remove('drag-inside','drag-outside'));
+  document.querySelectorAll('.canvasSectionCard').forEach(c=>c.classList.remove('drag-inside','drag-outside','drag-merge','drop-above','drop-below'));
 
 // Contexto de soltado dentro de una sección (a partir del gap abierto del cuerpo de la sección)
   const openGap = document.querySelector('.gap.open');
@@ -163,18 +173,16 @@ if (!sectionContext && pageList.classList.contains('grid-mode')){
   // En modo lista: se suelta sobre un gap de sección (data-section-gap).
   // En modo grid: los gaps están ocultos, se suelta sobre un card de sección
   // con indicador arriba/abajo (drop-above/drop-below).
-  let sectionTargetOrder = null;
+let sectionTargetOrder = null;
   if (currentDrag.origin === 'canvas-section'){
     if (openGap && openGap.dataset.sectionGap){
       sectionTargetOrder = parseInt(openGap.dataset.sectionOrder, 10);
     } else if (pageList.classList.contains('grid-mode')){
-      const aboveEl = document.querySelector('.canvasSectionCard.drop-above');
-      const belowEl = document.querySelector('.canvasSectionCard.drop-below');
-      const rel = aboveEl || belowEl;
+      const rel = dropAboveCard || dropBelowCard;
       if (rel){
         const idx = sections.findIndex(s=>s.id === rel.dataset.sectionId);
         if (idx !== -1){
-          sectionTargetOrder = aboveEl ? idx : idx + 1;
+          sectionTargetOrder = dropAboveCard ? idx : idx + 1;
         }
       }
     }
@@ -186,26 +194,30 @@ if (!sectionContext && pageList.classList.contains('grid-mode')){
       renderPageList();
       return;
     }
-  }
 
-  // Mover una sección entera a otra sección → preguntar antes
-  if (sectionCardAt && !sectionContext && currentDrag.origin === 'canvas-section'){
-    const srcSec = sections.find(s=>s.id === currentDrag.sectionId);
-    const targetSec = sections.find(s=>s.id === sectionCardAt.dataset.sectionId);
-    if (srcSec && targetSec && srcSec.id !== targetSec.id){
-      const ok = await confirmDialog('¿Mover la sección "' + srcSec.name + '" a la sección "' + targetSec.name + '"?');
-      if (ok){
-        srcSec.pageIds.forEach(id=>{
-          if (!targetSec.pageIds.includes(id)) targetSec.pageIds.push(id);
-        });
-        sections = sections.filter(sec=>sec.id !== srcSec.id);
-        resequencePages();
-        showToast('Sección "' + srcSec.name + '" movida a "' + targetSec.name + '".');
-        commitAction('Mover sección dentro del lienzo', dropBefore);
+    // Unir la sección arrastrada dentro de otra sección.
+    // - Modo grid: sobre el CUERPO de la sección destino (drag-merge).
+    // - Modo lista: sobre el card de otra sección que NO sea un gap de sección.
+    const mergeTargetCard = dragMergeCard ||
+      (!pageList.classList.contains('grid-mode') && sectionCardAt ? sectionCardAt : null);
+    if (mergeTargetCard){
+      const srcSec = sections.find(s=>s.id === currentDrag.sectionId);
+      const targetSec = sections.find(s=>s.id === mergeTargetCard.dataset.sectionId);
+      if (srcSec && targetSec && srcSec.id !== targetSec.id){
+        const ok = await confirmDialog('¿Mover la sección "' + srcSec.name + '" a la sección "' + targetSec.name + '"?');
+        if (ok){
+          srcSec.pageIds.forEach(id=>{
+            if (!targetSec.pageIds.includes(id)) targetSec.pageIds.push(id);
+          });
+          sections = sections.filter(sec=>sec.id !== srcSec.id);
+          resequencePages();
+          showToast('Sección "' + srcSec.name + '" movida a "' + targetSec.name + '".');
+          commitAction('Mover sección dentro del lienzo', dropBefore);
+        }
+        currentDrag = null;
+        renderPageList();
+        return;
       }
-      currentDrag = null;
-      renderPageList();
-      return;
     }
   }
 
