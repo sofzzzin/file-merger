@@ -29,6 +29,7 @@ if (pageList.classList.contains('grid-mode')){
     document.querySelectorAll('.pageCard').forEach(c=>c.classList.remove('drop-left','drop-right'));
     // Detectar cards de sección también en modo grid
     const gcard = getSectionCardAt(e);
+    const inSection = !!gcard;
     if (gcard){
       gcard.classList.add('drag-inside');
       document.querySelectorAll('.canvasSectionCard').forEach(c=>{
@@ -37,7 +38,21 @@ if (pageList.classList.contains('grid-mode')){
     } else {
       document.querySelectorAll('.canvasSectionCard').forEach(c=>c.classList.add('drag-outside'));
     }
-    const nearest = findNearestCard(e);
+
+    // Solo mostrar el indicador lado (izquierda/derecha) en las cards correspondientes:
+    // - si el puntero está DENTRO de una sección → indicar sobre las cards de ESA sección
+    // - si el puntero está FUERA (lienzo suelto) → indicar sobre las cards sueltas (no de sección)
+    const cards = Array.from(pageList.querySelectorAll('.pageCard')).filter(card=>{
+      const inside = !!card.closest('.canvasSectionCard');
+      return inSection ? inside : !inside;
+    });
+    let nearest = null, closestDist = Infinity;
+    for (const c of cards){
+      const r = c.getBoundingClientRect();
+      const cx = r.left + r.width/2, cy = r.top + r.height/2;
+      const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+      if (dist < closestDist){ closestDist = dist; nearest = c; }
+    }
     if (nearest){
       nearest.classList.add('dropTarget');
       // Indicar si se inserta a la izquierda o derecha según la mitad del puntero

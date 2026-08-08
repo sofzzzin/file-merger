@@ -290,7 +290,7 @@ document.addEventListener('click', async e=>{
 
   const originalLabel = exportBtn.innerHTML;
   btn.disabled = true;
-  btn.innerHTML = 'Generando...';
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>';
   try{
     const { PDFDocument } = PDFLib;
     const finalDoc = await PDFDocument.create();
@@ -341,9 +341,9 @@ document.addEventListener('click', async e=>{
   }catch(err){
     console.error(err);
     showToast('Error al exportar la sección: ' + err.message);
-  }finally{
+}finally{
     btn.disabled = false;
-    btn.innerHTML = 'PDF';
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>';
   }
 });
 
@@ -391,8 +391,7 @@ const label = document.createElement('div');
   exportBtnSec.className = 'secActionBtn sectionExportBtn';
   exportBtnSec.dataset.sectionId = sec.id;
   exportBtnSec.title = 'Descargar sección como PDF';
-  exportBtnSec.textContent = 'PDF';
-  exportBtnSec.innerHTML = 'PDF';
+  exportBtnSec.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>';
   actions.appendChild(exportBtnSec);
 
   const delBtn = document.createElement('button');
