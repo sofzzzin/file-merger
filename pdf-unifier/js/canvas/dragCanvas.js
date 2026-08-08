@@ -80,15 +80,21 @@ canvasArea.addEventListener('drop', async e=>{
     if (tSec) sectionContext = { sec: tSec, pos: parseInt(openGap.dataset.sectionPos, 10) };
   }
 
-  // En modo grid los gaps están ocultos: derivar el contexto a partir de la tarjeta hover
+  // En modo grid los gaps están ocultos: derivar el contexto según la posición del cursor.
+  // Si el puntero está dentro de un card de sección → se suelta dentro de esa sección.
+  // Si NO está dentro de ninguna sección → se suelta como página suelta del lienzo.
   if (!sectionContext && pageList.classList.contains('grid-mode')){
-    const hovered = document.querySelector('.pageCard.dropTarget');
-    if (hovered){
-      const hId = hovered.dataset.id;
-      const hSec = sections.find(s=>s.pageIds.includes(hId));
-      if (hSec){
-        const pos = hSec.pageIds.indexOf(hId);
-        sectionContext = { sec: hSec, pos };
+    const sCard = getSectionCardAt(e);
+    if (sCard){
+      const tSec = sections.find(s=>s.id === sCard.dataset.sectionId);
+      if (tSec){
+        const hovered = document.querySelector('.pageCard.dropTarget');
+        let pos = tSec.pageIds.length; // por defecto, al final de la sección
+        if (hovered){
+          const hId = hovered.dataset.id;
+          if (tSec.pageIds.includes(hId)) pos = tSec.pageIds.indexOf(hId);
+        }
+        sectionContext = { sec: tSec, pos };
       }
     }
   }
