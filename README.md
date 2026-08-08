@@ -9,6 +9,8 @@ Aplicación web para unir PDFs e imágenes en un solo archivo PDF directamente d
 - Agrega archivos a una biblioteca y arrástralos al lienzo.
 - Reordena páginas por arrastre.
 - Selecciona múltiples páginas y envía o elimina en bloque.
+- Crea **secciones** tanto en el lienzo como en la biblioteca para organizar tus documentos.
+- Deshaz/rehaz todas tus acciones con **Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y** (crear o eliminar secciones, mover elementos, renombrar, eliminar, restaurar desde la papelera, etc.).
 - Exporta el resultado final como un PDF unido, o en **lotes** (un PDF por sección en un ZIP).
 - Incluye papelera de reciclaje para recuperar elementos eliminados.
 
@@ -54,6 +56,8 @@ pdf-unifier/
 │   │   └── reorder.js
 │   ├── trash/
 │   │   └── trash.js
+│   ├── undo/
+│   │   └── history.js
 │   ├── export/
 │   │   └── exportPDF.js
 │   └── utils/
@@ -94,7 +98,8 @@ http://localhost:4173/
 2. Los archivos aparecerán en la biblioteca.
 3. Arrastra los elementos al lienzo para armarlos en el orden deseado.
 4. Reordena o elimina páginas según necesites.
-5. Haz clic en Exportar PDF para generar el archivo final.
+5. Utiliza **Ctrl+Z** para deshacer y **Ctrl+Shift+Z / Ctrl+Y** para rehacer cualquier acción.
+6. Haz clic en Exportar PDF para generar el archivo final.
 
 ## Notas
 
