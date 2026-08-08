@@ -485,6 +485,19 @@ sections.push(sec);
     commitAction('Mover sección en el lienzo', dropBefore);
   }
 
-  currentDrag = null;
+currentDrag = null;
   renderPageList();
+});
+
+// ── Limpieza global de indicadores de arrastre ───────────────
+// Al terminar CUALQUIER arrastre (dragend), independientemente de dónde se
+// suelte (lienzo, biblioteca, fuera), se quitan los indicadores `.drag-inside`
+// y `.drag-outside` de los cards de sección. Esto evita que una sección quede
+// "transparentada" (opacity .5) o resaltada si el drag termina fuera del área
+// que normalmente limpia esos estilos.
+document.addEventListener('dragend', ()=>{
+  document.querySelectorAll('.canvasSectionCard').forEach(c=>c.classList.remove('drag-inside','drag-outside','drag-merge','drop-above','drop-below'));
+});
+document.addEventListener('drop', ()=>{
+  document.querySelectorAll('.canvasSectionCard').forEach(c=>c.classList.remove('drag-inside','drag-outside','drag-merge','drop-above','drop-below'));
 });
