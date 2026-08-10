@@ -23,22 +23,30 @@ async function buildPdfFromPages(pageList){
       finalDoc.addPage(copied);
     } else {
       const src = sources[p.sourceId];
-      const base64 = src.dataUrl.split(',')[1];
-      const bytes = Uint8Array.from(atob(base64), c=>c.charCodeAt(0));
-      let embedded;
-      if (src.mime === 'image/png') embedded = await finalDoc.embedPng(bytes);
-      else embedded = await finalDoc.embedJpg(bytes);
-
-      const PX_TO_PT = 72/96;
-      let w = p.w * PX_TO_PT;
-      let h = p.h * PX_TO_PT;
-      const maxDim = 1000;
-      if (Math.max(w,h) > maxDim){
-        const s = maxDim / Math.max(w,h);
-        w *= s; h *= s;
+      if (!src || !src.dataUrl) {
+        console.warn(`Fuente de imagen no encontrada para la página ${p.id}`);
+        continue;
       }
-      const page = finalDoc.addPage([w, h]);
-      page.drawImage(embedded, { x:0, y:0, width:w, height:h });
+      try {
+        const base64 = src.dataUrl.includes(',') ? src.dataUrl.split(',')[1] : src.dataUrl;
+        const bytes = Uint8Array.from(atob(base64), c=>c.charCodeAt(0));
+        let embedded;
+        if (src.mime === 'image/png') embedded = await finalDoc.embedPng(bytes);
+        else embedded = await finalDoc.embedJpg(bytes);
+
+        const PX_TO_PT = 72/96;
+        let w = p.w * PX_TO_PT;
+        let h = p.h * PX_TO_PT;
+        const maxDim = 1000;
+        if (Math.max(w,h) > maxDim){
+          const s = maxDim / Math.max(w,h);
+          w *= s; h *= s;
+        }
+        const page = finalDoc.addPage([w, h]);
+        page.drawImage(embedded, { x:0, y:0, width:w, height:h });
+      } catch (err) {
+        console.error(`Error al decodificar la imagen de la página ${p.id}:`, err);
+      }
     }
   }
 
